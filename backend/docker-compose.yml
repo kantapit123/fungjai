@@ -36,4 +36,4 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      - /Users/rinrada.w/fungjai/backend/plugins:/plugins
+      - /plugins:/plugins

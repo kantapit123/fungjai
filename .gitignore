@@ -1,0 +1,6 @@
+ENV
+volume
+logs
+.DS_Store
+backend/.DS_Store
+backend/data/
