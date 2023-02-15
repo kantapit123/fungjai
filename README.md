@@ -31,7 +31,7 @@ http://localhost:9001/
 http://localhost:8123/play
 ```
 
-- เข้า clickhouse ui
+- เข้า metabase ui
 
 ```
 http://localhost:3000/setup
