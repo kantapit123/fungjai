@@ -6,7 +6,7 @@ Local Deploy Backend
 
 ``` yml
     volumes:
-      - /Users/rinrada.w/fungjai/backend/plugins:/plugins
+      - /Users/users/fungjai/backend/plugins:/plugins
 ```
 
 2. run command
