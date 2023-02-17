@@ -72,7 +72,16 @@ http://localhost:3000/setup
 
 ![docker_data](backend/imgs/docker_data_folder.png)
 
-หากต้องการเริ่ม docker container โดยละทิ้งค่าที่เคยตั้งค่าไว้ทั้งหมด ให้ลบ
+**หากเริ่ม docker compose แล้ว clickhouse container ไม่ทำงาน ให้ comment บรรทัดตามรูปด้านล่าง แล้วสั่ง dokcer compose up -d อีกครั้ง**
+
+``` yml
+volumes:
+      - ./docker_data/clickhouse/server:/var/lib/clickhouse
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+```
+
+**หากต้องการเริ่ม docker container โดยละทิ้งค่าที่เคยตั้งค่าไว้ทั้งหมด** ให้ลบ
 - docker_data/clickhouse
 - docker_data/minio/.minio.sys
 
