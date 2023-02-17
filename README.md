@@ -82,7 +82,9 @@ volumes:
 ```
 
 **หากต้องการเริ่ม docker container โดยละทิ้งค่าที่เคยตั้งค่าไว้ทั้งหมด** ให้ลบ
+
 - docker_data/clickhouse
+
 - docker_data/minio/.minio.sys
 
 ## DBT Deploy
@@ -99,3 +101,35 @@ volumes:
 ``` sh
    dbt run
 ```
+
+## Metabase Dashboard Setup
+1. เข้าไปที่ http://localhost:3000/setup
+
+1. กรอกข้อมูลให้ครบถ้วน ในส่วน Add your data ให้กด I'll add my data later
+
+![metabase_setup](/backend/imgs/metabase_setup.png)
+
+3. กด Finsih และ Take me to Metabase
+
+![metabase_finish](/backend/imgs/metabase_finish.png)
+
+4. ไปที่มุมขวาบน กดรูปฟันเฟือง แล้วเลือก Admin setting
+
+![admin_setting](/backend/imgs/admin_setting.png)
+
+5. กดเลือก Add a database
+
+![add_database](/backend/imgs/add_database.png)
+
+6. ใส่ configuration ตามรูปด้านล่าง แล้วกด Save
+
+![database_config](/backend/imgs/database_config.png)
+
+> Database type => ชนิด database ในที่นี้คือ ClickHouse
+
+> Database Name => ชื่อ database ใน ClickHouse 
+หากตอนสร้างไม่ได้เลือก database ใด ให้ใส่เป็น default
+
+> Host => IP หรือ Domain ของ database ในที่นี้คือ clickhouse-server
+
+> Username / Password => ผู้ใช้และรหัสผ่านเพื่อเข้าถึง database ในที่นี้คือ Username = default และเว้นช่อง Password
