@@ -10,7 +10,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/kantapit123/fungjai-webhook/producer"
+	"github.com/kantapit123/fungjai/webhook/producer"
 	"github.com/labstack/echo/v4"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"gopkg.in/robfig/cron.v2"
@@ -340,8 +340,8 @@ func hello(name string) {
 func runCronJobs(jsonData []byte, botClient *linebot.Client) {
 	s := cron.New()
 
-	// Broadcast At 0 minutes past the hour, every 3 hours, starting at 08:00 AM, Monday through Friday
-	s.AddFunc("0 8/3 * * 1-5", func() {
+	// Broadcast At minute 30 past hour 8, 11, and 16 on every day-of-week from Monday through Friday.
+	s.AddFunc("30 8,11,16 * * 1-5", func() {
 		BroadcastFlexMessage(jsonData, botClient)
 	})
 
