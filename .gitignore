@@ -9,3 +9,6 @@ plugins
 dags/__pycache__/*
 clickhouse_data
 
+.env
+
+.gitignore

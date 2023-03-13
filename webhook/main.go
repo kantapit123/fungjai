@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"fungjai/producer"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/kantapit123/fungjai-webhook/producer"
 	"github.com/labstack/echo/v4"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"gopkg.in/robfig/cron.v2"
@@ -75,13 +75,14 @@ func main() {
 	if err != nil {
 		log.Fatal("Line bot client ERROR: ", err)
 	}
+
 	// Initialize kafka producer
 	err = producer.InitKafka()
 	if err != nil {
 		log.Fatal("Kafka producer ERROR: ", err)
 	}
 
-	// Initilaze Echo web server
+	// Initilaze Echo web servers
 	e := echo.New()
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "ok")
@@ -92,8 +93,32 @@ func main() {
 		if err != nil {
 			log.Fatal("Event bot ERROR: ", err)
 		}
-		topics := "user-messages"
+		// topics := "user-messages"
 
+		// for _, event := range events_bot {
+		// 	if event.Type == linebot.EventTypeMessage {
+		// 		switch message := event.Message.(type) {
+		// 		case *linebot.TextMessage:
+		// 			messageJson, _ := json.Marshal(&producedMessage{
+		// 				UserID:    event.Source.UserID,
+		// 				Timestamp: event.Timestamp.Unix(),
+		// 				MessageID: message.ID,
+		// 				Message:   message.Text,
+		// 			})
+		// 			producerErr := producer.Produce(topics, string(messageJson))
+		// 			if producerErr != nil {
+		// 				log.Print(err)
+		// 				panic("errorkafka")
+		// 			} else {
+		// 				messageResponse := fmt.Sprintf("Produced [%s] successfully", message.Text)
+		// 				if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(messageResponse)).Do(); err != nil {
+		// 					log.Print(err)
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
+		topics := "user-messages"
 		for _, event := range events_bot {
 			if event.Type == linebot.EventTypeMessage {
 				switch message := event.Message.(type) {
@@ -104,15 +129,16 @@ func main() {
 						MessageID: message.ID,
 						Message:   message.Text,
 					})
+					messageResponse := "messageResponse is " + message.Text
+					if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(messageResponse)).Do(); err != nil {
+						log.Print(err)
+					}
 					producerErr := producer.Produce(topics, string(messageJson))
 					if producerErr != nil {
 						log.Print(err)
-					} else {
-						messageResponse := fmt.Sprintf("Produced [%s] successfully", message.Text)
-						if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(messageResponse)).Do(); err != nil {
-							log.Print(err)
-						}
 					}
+
+					//messageResponse := fmt.Sprintf("Produced [%s] successfully", message.Text)
 				}
 			}
 		}
@@ -340,8 +366,8 @@ func hello(name string) {
 func runCronJobs(jsonData []byte, botClient *linebot.Client) {
 	s := cron.New()
 
-	// Broadcast At 0 minutes past the hour, every 3 hours, starting at 08:00 AM, Monday through Friday
-	s.AddFunc("0 8/3 * * 1-5", func() {
+	// Broadcast At minute 30 past hour 8, 11, and 16 on every day-of-week from Monday through Friday.
+	s.AddFunc("30 8,11,16 * * 1-5", func() {
 		BroadcastFlexMessage(jsonData, botClient)
 	})
 
