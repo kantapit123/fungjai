@@ -21,11 +21,9 @@ func Produce(topics string, message string) error {
 		TopicPartition: kafka.TopicPartition{Topic: &topics, Partition: kafka.PartitionAny},
 		Value:          []byte(message),
 	}, deliveryChan)
-
 	if err != nil {
 		fmt.Printf("Produce failed: %v\n", err)
 	}
-
 	e := <-deliveryChan
 	m := e.(*kafka.Message)
 

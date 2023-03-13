@@ -7,6 +7,8 @@ RUN go mod download
 
 ARG CHANNEL_SECRET
 ARG CHANNEL_ACCESS_TOKEN
+ARG BOOTSTRAP_SERVERS
+
 
 RUN go build -o /fungjai
 
