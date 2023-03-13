@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/joho/godotenv v1.5.1
-	github.com/kantapit123/fungjai v0.0.0-20230307080803-68fa35f84b36
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/line/line-bot-sdk-go v7.8.0+incompatible
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
