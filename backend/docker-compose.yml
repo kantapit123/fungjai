@@ -11,6 +11,7 @@ services:
       - 9000:9000
       - 9001:9001
     volumes:
+      - ./docker_data/minio:/data
       - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -27,12 +28,16 @@ services:
     ports:
       - 8123:8123
     volumes:
-      - ./data/server:/var/lib/clickhouse
+      - ./docker_data/clickhouse/server:/var/lib/clickhouse
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
   metabase:
     image: 'metabase/metabase:v0.45.2.1'
     container_name: 'metabase-with-clickhouse'
+    environment:
+      MB_PLUGIN_CACHE_ENABLED: "false"
+    hostname: metabase-moodytrack
     ports:
       - '3000:3000'
     volumes:
-      - /Users/rinrada.w/fungjai/backend/plugins:/plugins
+      - ./docker_data/metabase/plugins:/plugins

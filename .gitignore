@@ -1,10 +1,13 @@
 ENV
 volume
-
 data/
-
 .DS_Store
-backend/.DS_Store
+logs
+minio_data
+plugins
+.env
+dags/__pycache__/*
+clickhouse_data
 
 .env
 
