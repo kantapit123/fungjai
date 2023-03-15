@@ -9,9 +9,15 @@ ARG CHANNEL_SECRET
 ARG CHANNEL_ACCESS_TOKEN
 ARG BOOTSTRAP_SERVERS
 
+RUN go build -o fungjai .
 
-RUN go build -o /fungjai
+## Deploy
+FROM alpine:latest 
+
+WORKDIR /app
+
+COPY --from=build /app/fungjai .
 
 EXPOSE 1323
 
-CMD [ "/fungjai" ]
+CMD ["sleep", "infinity"]
