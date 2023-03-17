@@ -7,7 +7,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/line/line-bot-sdk-go v7.8.0+incompatible
-	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
+	github.com/robfig/cron/v3 v3.0.0
 )
 
 require (

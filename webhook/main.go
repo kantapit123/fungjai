@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"fungjai/producer"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,7 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/line/line-bot-sdk-go/linebot"
-	"gopkg.in/robfig/cron.v2"
+	"github.com/robfig/cron/v3"
 )
 
 type LineMessage struct {
@@ -77,10 +76,10 @@ func main() {
 	}
 
 	// Initialize kafka producer
-	err = producer.InitKafka()
-	if err != nil {
-		log.Fatal("Kafka producer ERROR: ", err)
-	}
+	// err = producer.InitKafka()
+	// if err != nil {
+	// 	log.Fatal("Kafka producer ERROR: ", err)
+	// }
 
 	// Initilaze Echo web servers
 	e := echo.New()
@@ -118,25 +117,26 @@ func main() {
 		// 		}
 		// 	}
 		// }
-		topics := "user-messages"
+
+		// topics := "user-messages"
 		for _, event := range events_bot {
 			if event.Type == linebot.EventTypeMessage {
 				switch message := event.Message.(type) {
 				case *linebot.TextMessage:
-					messageJson, _ := json.Marshal(&producedMessage{
-						UserID:    event.Source.UserID,
-						Timestamp: event.Timestamp.Unix(),
-						MessageID: message.ID,
-						Message:   message.Text,
-					})
+					// messageJson, _ := json.Marshal(&producedMessage{
+					// 	UserID:    event.Source.UserID,
+					// 	Timestamp: event.Timestamp.Unix(),
+					// 	MessageID: message.ID,
+					// 	Message:   message.Text,
+					// })
 					messageResponse := "messageResponse is " + message.Text
 					if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(messageResponse)).Do(); err != nil {
 						log.Print(err)
 					}
-					producerErr := producer.Produce(topics, string(messageJson))
-					if producerErr != nil {
-						log.Print(err)
-					}
+					// producerErr := producer.Produce(topics, string(messageJson))
+					// if producerErr != nil {
+					// 	log.Print(err)
+					// }
 
 					//messageResponse := fmt.Sprintf("Produced [%s] successfully", message.Text)
 				}

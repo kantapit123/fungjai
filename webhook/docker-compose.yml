@@ -6,5 +6,7 @@ services:
     container_name: docker-webhook
     ports:
       - "1323:1323"
+    env_file:
+      - .env
     
     
