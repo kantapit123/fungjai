@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +13,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/line/line-bot-sdk-go/linebot"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/robfig/cron/v3"
 )
 
@@ -62,6 +65,7 @@ type producedMessage struct {
 }
 
 func main() {
+
 	// loads .env file
 	err := godotenv.Load()
 	if err != nil {
@@ -73,6 +77,43 @@ func main() {
 	bot, err := linebot.New(os.Getenv("CHANNEL_SECRET"), os.Getenv("CHANNEL_ACCESS_TOKEN"), linebot.WithHTTPClient(client))
 	if err != nil {
 		log.Fatal("Line bot client ERROR: ", err)
+	}
+
+	//minio config
+	ctx := context.Background()
+	//endpoint := "5817-2405-9800-b860-b117-e4d4-d3f9-7321-59a.ap.ngrok.io"
+	host := "localhost:9000"
+	accessKeyID := "lmenrLntC9lTc9zf"
+	secretAccessKey := "z2t4IpmIsWL15ArBIvCbqcQbtKCjLZsX"
+	useSSL := false
+
+	// Initialize minio client object.
+	minioClient, err := minio.New(host, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+		Secure: useSSL,
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Printf("----------------------------------> minioClient is now setup")
+	// log.Printf("%#v\n", minioClient) // minioClient is now setup
+
+	// Make a new bucket called test1.
+	bucketName := "test1kantapit2"
+	location := "ap-southeast-1"
+
+	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
+	if err != nil {
+		// Check to see if we already own this bucket (which happens if you run this twice)
+		exists, errBucketExists := minioClient.BucketExists(ctx, bucketName)
+		if errBucketExists == nil && exists {
+			log.Printf("We already own %s\n", bucketName)
+		} else {
+			log.Printf("Fail to Create %s\n", bucketName)
+			log.Fatalln(err)
+		}
+	} else {
+		log.Printf("Successfully created %s\n", bucketName)
 	}
 
 	// Initialize kafka producer
@@ -129,8 +170,10 @@ func main() {
 					// 	MessageID: message.ID,
 					// 	Message:   message.Text,
 					// })
+					// fmt.Println(messageJson)
 					messageResponse := "messageResponse is " + message.Text
 					if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(messageResponse)).Do(); err != nil {
+						log.Print("webhook error")
 						log.Print(err)
 					}
 					// producerErr := producer.Produce(topics, string(messageJson))
