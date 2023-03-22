@@ -5,18 +5,58 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
-	"github.com/line/line-bot-sdk-go/linebot"
+	"github.com/line/line-bot-sdk-go/v7/linebot"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/robfig/cron/v3"
 )
+
+type PostbackLineMessage struct {
+	Type               string             `json:"type"`
+	Postback           Postback           `json:"postback"`
+	WebhookEventID     string             `json:"webhookEventId"`
+	RawDeliveryContext RawDeliveryContext `json:"deliveryContext"`
+	Timestamp          int64              `json:"timestamp"`
+	RawSource          RawSource          `json:"source"`
+	ReplyToken         string             `json:"replyToken"`
+	Mode               string             `json:"mode"`
+}
+type Postback struct {
+	Data string `json:"data"`
+}
+
+type RawLineMessage struct {
+	Type               string             `json:"type"`
+	RawMessage         RawMessage         `json:"message"`
+	WebhookEventID     string             `json:"webhookEventId"`
+	RawDeliveryContext RawDeliveryContext `json:"deliveryContext"`
+	Timestamp          int64              `json:"timestamp"`
+	RawSource          RawSource          `json:"source"`
+	ReplyToken         string             `json:"replyToken"`
+	Mode               string             `json:"mode"`
+}
+type RawMessage struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
+	Text string `json:"text"`
+}
+type RawDeliveryContext struct {
+	IsRedelivery bool `json:"isRedelivery"`
+}
+type RawSource struct {
+	Type   string `json:"type"`
+	UserID string `json:"userId"`
+}
 
 type LineMessage struct {
 	Destination string `json:"destination"`
@@ -79,28 +119,25 @@ func main() {
 		log.Fatal("Line bot client ERROR: ", err)
 	}
 
-	//minio config
+	// Initialize a new MinIO client object
 	ctx := context.Background()
-	//endpoint := "5817-2405-9800-b860-b117-e4d4-d3f9-7321-59a.ap.ngrok.io"
-	host := "localhost:9000"
+	endpoint := "localhost:9000"
 	accessKeyID := "lmenrLntC9lTc9zf"
 	secretAccessKey := "z2t4IpmIsWL15ArBIvCbqcQbtKCjLZsX"
-	useSSL := false
-
-	// Initialize minio client object.
-	minioClient, err := minio.New(host, &minio.Options{
+	useSSL := false // Change to true if you want to use SSL
+	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
 		Secure: useSSL,
 	})
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
 	}
-	log.Printf("----------------------------------> minioClient is now setup")
-	// log.Printf("%#v\n", minioClient) // minioClient is now setup
 
-	// Make a new bucket called test1.
-	bucketName := "test1kantapit2"
+	// Make a new bucket.
+	bucketName := "fungjai"
 	location := "ap-southeast-1"
+	folderName := "responses"
+	responseType := "mood"
 
 	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
 	if err != nil {
@@ -109,13 +146,12 @@ func main() {
 		if errBucketExists == nil && exists {
 			log.Printf("We already own %s\n", bucketName)
 		} else {
-			log.Printf("Fail to Create %s\n", bucketName)
 			log.Fatalln(err)
 		}
 	} else {
 		log.Printf("Successfully created %s\n", bucketName)
 	}
-
+	log.Print("--------------------> MinIO Start succeed")
 	// Initialize kafka producer
 	// err = producer.InitKafka()
 	// if err != nil {
@@ -134,7 +170,6 @@ func main() {
 			log.Fatal("Event bot ERROR: ", err)
 		}
 		// topics := "user-messages"
-
 		// for _, event := range events_bot {
 		// 	if event.Type == linebot.EventTypeMessage {
 		// 		switch message := event.Message.(type) {
@@ -158,24 +193,53 @@ func main() {
 		// 		}
 		// 	}
 		// }
-
-		// topics := "user-messages"
 		for _, event := range events_bot {
 			if event.Type == linebot.EventTypeMessage {
 				switch message := event.Message.(type) {
 				case *linebot.TextMessage:
-					// messageJson, _ := json.Marshal(&producedMessage{
+					// messageJson, err := json.Marshal(&producedMessage{
 					// 	UserID:    event.Source.UserID,
-					// 	Timestamp: event.Timestamp.Unix(),
+					// 	Timestamp: event.Timestamp.UnixNano(),
 					// 	MessageID: message.ID,
 					// 	Message:   message.Text,
 					// })
-					// fmt.Println(messageJson)
-					messageResponse := "messageResponse is " + message.Text
+					RawmessageJson, err := json.Marshal(&RawLineMessage{
+						Type: string(event.Type),
+						RawMessage: RawMessage{
+							Type: string(linebot.MessageTypeText),
+							ID:   message.ID,
+							Text: message.Text,
+						},
+						WebhookEventID: event.WebhookEventID,
+						RawDeliveryContext: RawDeliveryContext{
+							IsRedelivery: event.DeliveryContext.IsRedelivery,
+						},
+						Timestamp: event.Timestamp.UnixNano(),
+						RawSource: RawSource{
+							Type:   string(event.Source.Type),
+							UserID: event.Source.UserID,
+						},
+						ReplyToken: event.ReplyToken,
+						Mode:       string(event.Mode),
+					})
+
+					messageResponse := fmt.Sprintf("messageResponse is " + message.Text)
 					if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(messageResponse)).Do(); err != nil {
-						log.Print("webhook error")
 						log.Print(err)
 					}
+					currentTime := time.Now().UTC()
+					date := fmt.Sprintf("%d-%02d-%02d", currentTime.Year(), currentTime.Month(), currentTime.Day())
+					timestamp_string := strconv.Itoa(int(event.Timestamp.UnixNano()))
+					uid_hash_string := strconv.FormatUint(uint64(hash(event.Source.UserID)), 10)
+					log.Println("Add " + timestamp_string + "-" + uid_hash_string + ".json to MinIO Bucket ->> " + bucketName)
+
+					objectName := fmt.Sprintf(folderName + "/" + responseType + "/" + date + "/" + timestamp_string + "-" + uid_hash_string + ".json")
+					_, err = minioClient.PutObject(context.Background(), bucketName, objectName, bytes.NewReader(RawmessageJson), int64(len(RawmessageJson)), minio.PutObjectOptions{})
+					if err != nil {
+						log.Println(err)
+					}
+					log.Println("JSON data put into MinIO successfully")
+
 					// producerErr := producer.Produce(topics, string(messageJson))
 					// if producerErr != nil {
 					// 	log.Print(err)
@@ -184,9 +248,44 @@ func main() {
 					//messageResponse := fmt.Sprintf("Produced [%s] successfully", message.Text)
 				}
 			}
+			if event.Type == linebot.EventTypePostback {
+				message := event
+				PostbackLineMessage, err := json.Marshal(&PostbackLineMessage{
+					Type: string(message.Type),
+					Postback: Postback{
+						Data: event.Postback.Data,
+					},
+					WebhookEventID:     event.WebhookEventID,
+					RawDeliveryContext: RawDeliveryContext(event.DeliveryContext),
+					Timestamp:          event.Timestamp.UnixNano(),
+					RawSource: RawSource{
+						Type:   string(event.Source.Type),
+						UserID: event.Source.UserID,
+					},
+					ReplyToken: event.ReplyToken,
+					Mode:       string(event.Mode),
+				})
+				messageResponse := fmt.Sprintf("The Data postback from flex message is " + event.Postback.Data)
+				if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(messageResponse)).Do(); err != nil {
+					log.Print(err)
+				}
+				currentTime := time.Now().UTC()
+				date := fmt.Sprintf("%d-%02d-%02d", currentTime.Year(), currentTime.Month(), currentTime.Day())
+				timestamp_string := strconv.Itoa(int(event.Timestamp.UnixNano()))
+				uid_hash_string := strconv.FormatUint(uint64(hash(event.Source.UserID)), 10)
+				log.Println("Add " + timestamp_string + "-" + uid_hash_string + ".json to MinIO Bucket ->> " + bucketName)
+
+				objectName := fmt.Sprintf(folderName + "/" + responseType + "/" + date + "/" + timestamp_string + "-" + uid_hash_string + ".json")
+				_, err = minioClient.PutObject(context.Background(), bucketName, objectName, bytes.NewReader(PostbackLineMessage), int64(len(PostbackLineMessage)), minio.PutObjectOptions{})
+				if err != nil {
+					log.Println(err)
+				}
+				log.Println("JSON data put into MinIO successfully")
+			}
+
 		}
 
-		log.Println("%% message success")
+		log.Println("-->> message success")
 		return c.String(http.StatusOK, "ok!!")
 
 	})
@@ -202,45 +301,45 @@ func main() {
 	// 		text,
 	// 	},
 	// }
-
 	// BroadcastMessageLine(message)
+
 	json_flex1 := []byte(`
-		{
-			"type": "bubble",
-			"header": {
+			{
+				"type": "bubble",
+				"header": {
 				"type": "box",
 				"layout": "vertical",
 				"contents": [
-				{
+					{
 					"type": "image",
 					"url": "https://sv1.picz.in.th/images/2023/02/24/LMiinI.png",
 					"size": "full",
 					"aspectMode": "cover",
 					"position": "relative"
-				}
+					}
 				],
 				"background": {
-				"type": "linearGradient",
-				"angle": "0deg",
-				"startColor": "#E8E0D5",
-				"endColor": "#ffffff"
+					"type": "linearGradient",
+					"angle": "0deg",
+					"startColor": "#E8E0D5",
+					"endColor": "#ffffff"
 				},
 				"position": "relative",
 				"paddingAll": "0%"
-			},
-			"body": {
+				},
+				"body": {
 				"type": "box",
 				"layout": "vertical",
 				"contents": [
-				{
+					{
 					"type": "box",
 					"layout": "horizontal",
 					"contents": [
-					{
+						{
 						"type": "box",
 						"layout": "vertical",
 						"contents": [
-						{
+							{
 							"type": "image",
 							"url": "https://sv1.picz.in.th/images/2023/02/24/LMigQZ.png",
 							"size": "full",
@@ -248,12 +347,13 @@ func main() {
 							"aspectRatio": "21:16",
 							"gravity": "center",
 							"action": {
-							"type": "message",
-							"label": "action",
-							"text": "4"
+								"type": "postback",
+								"label": "mood4",
+								"data": "question=1&value=4",
+								"displayText": "4"
 							}
-						},
-						{
+							},
+							{
 							"type": "image",
 							"url": "https://sv1.picz.in.th/images/2023/02/24/LMiTmz.png",
 							"size": "full",
@@ -261,19 +361,19 @@ func main() {
 							"aspectRatio": "21:16",
 							"gravity": "center",
 							"action": {
-							"type": "message",
-							"label": "action",
-							"text": "2"
+								"type": "message",
+								"label": "mood2",
+								"text": "2"
 							}
-						}
+							}
 						],
 						"flex": 1
-					},
-					{
+						},
+						{
 						"type": "box",
 						"layout": "vertical",
 						"contents": [
-						{
+							{
 							"type": "image",
 							"url": "https://sv1.picz.in.th/images/2023/02/24/LMxaAa.png",
 							"gravity": "center",
@@ -281,12 +381,13 @@ func main() {
 							"aspectRatio": "21:16",
 							"aspectMode": "cover",
 							"action": {
-							"type": "message",
-							"label": "action",
-							"text": "3"
-							}
-						},
-						{
+								"type": "message",
+								"label": "mood3",
+								"text": "3"
+							},
+							"position": "relative"
+							},
+							{
 							"type": "image",
 							"url": "https://sv1.picz.in.th/images/2023/02/24/LMi1bR.png",
 							"gravity": "center",
@@ -294,24 +395,31 @@ func main() {
 							"aspectRatio": "21:16",
 							"aspectMode": "cover",
 							"action": {
-							"type": "message",
-							"label": "action",
-							"text": "1"
+								"type": "message",
+								"label": "mood1",
+								"text": "1"
 							}
-						}
+							}
 						]
-					}
+						}
 					]
-				}
+					}
 				],
 				"paddingAll": "0px"
-			}
+				}
 			}
 		`)
 
 	//run the code under every day
+	BroadcastFlexMessage(json_flex1, bot)
 	runCronJobs(json_flex1, bot)
 	e.Logger.Fatal(e.Start(":1323"))
+}
+
+func hash(s string) uint32 {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return h.Sum32()
 }
 
 func BroadcastFlexMessage(jsonData []byte, bot *linebot.Client) error {
@@ -399,11 +507,6 @@ func getProfile(userId string) string {
 	log.Println(profile.DisplayName)
 	return profile.DisplayName
 
-}
-
-func hello(name string) {
-	message := fmt.Sprintf("Hi, %v", name)
-	fmt.Println(message)
 }
 
 func runCronJobs(jsonData []byte, botClient *linebot.Client) {

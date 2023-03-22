@@ -3,10 +3,9 @@ module fungjai
 go 1.20
 
 require (
-	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.10.2
-	github.com/line/line-bot-sdk-go v7.8.0+incompatible
+	github.com/line/line-bot-sdk-go/v7 v7.19.0
 	github.com/minio/minio-go/v7 v7.0.49
 	github.com/robfig/cron/v3 v3.0.0
 )
