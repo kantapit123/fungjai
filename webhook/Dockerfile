@@ -2,7 +2,9 @@ FROM golang:1.20 AS build
 
 WORKDIR /app
 
-COPY . .
+COPY go.mod ./
+COPY go.sum ./
+COPY *.go ./
 RUN go mod download
 
 ARG CHANNEL_SECRET

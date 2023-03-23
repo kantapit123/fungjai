@@ -250,7 +250,7 @@ func main() {
 			}
 			if event.Type == linebot.EventTypePostback {
 				message := event
-				PostbackLineMessage, err := json.Marshal(&PostbackLineMessage{
+				PostbackLineMessage, err := JSONMarshal(&PostbackLineMessage{
 					Type: string(message.Type),
 					Postback: Postback{
 						Data: event.Postback.Data,
@@ -265,7 +265,9 @@ func main() {
 					ReplyToken: event.ReplyToken,
 					Mode:       string(event.Mode),
 				})
-				messageResponse := fmt.Sprintf("The Data postback from flex message is " + event.Postback.Data)
+
+				display_string := string(event.Postback.Data[len(event.Postback.Data)-1:])
+				messageResponse := fmt.Sprintf("The Data postback from flex message is " + display_string)
 				if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(messageResponse)).Do(); err != nil {
 					log.Print(err)
 				}
@@ -361,9 +363,10 @@ func main() {
 							"aspectRatio": "21:16",
 							"gravity": "center",
 							"action": {
-								"type": "message",
+								"type": "postback",
 								"label": "mood2",
-								"text": "2"
+								"data": "question=1&value=2",
+								"displayText": "2"
 							}
 							}
 						],
@@ -381,9 +384,10 @@ func main() {
 							"aspectRatio": "21:16",
 							"aspectMode": "cover",
 							"action": {
-								"type": "message",
+								"type": "postback",
 								"label": "mood3",
-								"text": "3"
+								"data": "question=1&value=3",
+								"displayText": "3"
 							},
 							"position": "relative"
 							},
@@ -395,9 +399,10 @@ func main() {
 							"aspectRatio": "21:16",
 							"aspectMode": "cover",
 							"action": {
-								"type": "message",
+								"type": "postback",
 								"label": "mood1",
-								"text": "1"
+								"data": "question=1&value=1",
+								"displayText": "1"
 							}
 							}
 						]
@@ -518,4 +523,12 @@ func runCronJobs(jsonData []byte, botClient *linebot.Client) {
 	})
 
 	s.Start()
+}
+
+func JSONMarshal(t interface{}) ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(t)
+	return buffer.Bytes(), err
 }
