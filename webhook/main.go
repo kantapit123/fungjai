@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 	"github.com/minio/minio-go/v7"
@@ -106,11 +105,11 @@ type producedMessage struct {
 
 func main() {
 
-	// loads .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	// loads .env file >> work on local only if you want to run on docker comment it!
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	log.Fatal("Error loading .env file")
+	// }
 
 	// Initialize linebot client
 	client := &http.Client{}
@@ -121,7 +120,7 @@ func main() {
 
 	// Initialize a new MinIO client object
 	ctx := context.Background()
-	endpoint := "localhost:9000"
+	endpoint := "minio:9000"
 	accessKeyID := "lmenrLntC9lTc9zf"
 	secretAccessKey := "z2t4IpmIsWL15ArBIvCbqcQbtKCjLZsX"
 	useSSL := false // Change to true if you want to use SSL
@@ -130,6 +129,7 @@ func main() {
 		Secure: useSSL,
 	})
 	if err != nil {
+		log.Println("Error to Initialize a new MinIO client")
 		fmt.Println(err)
 	}
 
@@ -146,6 +146,7 @@ func main() {
 		if errBucketExists == nil && exists {
 			log.Printf("We already own %s\n", bucketName)
 		} else {
+			log.Println("Error to Create Bucket")
 			log.Fatalln(err)
 		}
 	} else {
@@ -225,6 +226,7 @@ func main() {
 
 					messageResponse := fmt.Sprintf("messageResponse is " + message.Text)
 					if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(messageResponse)).Do(); err != nil {
+						log.Println("Error to Reply")
 						log.Print(err)
 					}
 					currentTime := time.Now().UTC()
@@ -236,6 +238,7 @@ func main() {
 					objectName := fmt.Sprintf(folderName + "/" + responseType + "/" + date + "/" + timestamp_string + "-" + uid_hash_string + ".json")
 					_, err = minioClient.PutObject(context.Background(), bucketName, objectName, bytes.NewReader(RawmessageJson), int64(len(RawmessageJson)), minio.PutObjectOptions{})
 					if err != nil {
+						log.Println("Error to PUT file")
 						log.Println(err)
 					}
 					log.Println("JSON data put into MinIO successfully")

@@ -2,7 +2,7 @@ version: '3'
 
 services:
   webhook:
-    image: docker-webhook-server:multistage
+    image: docker-webhook-server:multistage-beta
     container_name: docker-webhook
     ports:
       - "1323:1323"
