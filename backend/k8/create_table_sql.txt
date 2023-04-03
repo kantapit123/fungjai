@@ -1,0 +1,5 @@
+Survey 2 -> 
+CREATE TABLE moody_table_json_2 (account_token_id String, question_survey Tuple(question1 Tuple(question String , answer String), question2 Tuple(question String , answer String), question3 Tuple(question String , answer String)), timestamp DateTime) ENGINE = S3('http://minio-service:9001/moodybucket/moodtrackerjson/survey2/*.json', 'minioadmin', 'minioadmin', 'JSONEachRow')
+
+Survey 1 ->
+CREATE TABLE moody_table_json ( account_token_id String, question_survey Tuple(question String , answer String), timestamp DateTime) ENGINE = S3('http://minio-service:9001/moodybucket/moodtrackerjson/survey1/*.json', 'minioadmin', 'minioadmin', 'JSONEachRow')

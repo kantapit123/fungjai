@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metabase
+  labels:
+    app: metabase
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metabase
+  template:
+    metadata:
+      labels:
+        app: metabase
+    spec:
+      containers:
+        - name: metabase
+          image: metabase/metabase:v0.45.2.1
+          ports:
+            - containerPort: 3000
+              name: metabase
+          # env:
+          #   # - name: MB_DB_USER
+          #   #   valueFrom:
+          #   #     secretKeyRef:
+          #   #       name: metabase-db-cred
+          #   #       key: username
+          #   # - name: MB_DB_PASS
+          #   #   valueFrom:
+          #   #     secretKeyRef:
+          #   #       name: metabase-db-cred
+          #   #       key: password
+          #   - name: MB_DB_HOST
+          #     value: "localhost"
+          #   - name: MB_DB_DBNAME
+          #     value: "metabase"
+          #   - name: MB_DB_TYPE
+          #     value: "clickhouse"
+          #   - name: MB_DB_PORT
+          #     value: "8123"
+        # - name: cloudsql
+        #   image: gcr.io/cloudsql-docker/gce-proxy:1.11
+        #   command: ["/cloud_sql_proxy",
+        #             "-instances=<INSTANCE_CONNETION_STRING>",
+        #             "-credential_file=/secrets/cloudsql/cloudsql-gcp-key.json"]
+        #   volumeMounts:
+        #     - name: cloudsql-service-account
+        #       mountPath: /secrets/cloudsql
+        #       readOnly: true
+      # volumes:
+      #   - name: cloudsql-service-account
+      #     secret:
+      #       secretName: cloudsql-gcp-key
