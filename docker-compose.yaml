@@ -32,7 +32,7 @@ x-airflow-common:
 services:
   webhook:
     image: docker-webhook-server:multistage-beta
-    container_name: go-webhook
+    container_name: fungjai-go-webhook
     ports:
       - "1323:1323"
     env_file:
@@ -40,13 +40,13 @@ services:
       
   zookeeper:
     image: wurstmeister/zookeeper
-    container_name: zookeeper_fungjai
+    container_name: fungjai-zookeeper
     ports:
       - '2181:2181'
       
   kafka:
     image: wurstmeister/kafka
-    container_name: kafka_fungjai
+    container_name: fungjai-kafka
     ports:
       - '9092:9092'
     environment:

@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-service
+spec:
+  selector: 
+    app: fungjai-webhook
+  ports:
+  - port: 1323
+    targetPort: 1323
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-deployment
+spec:
+  selector:
+    matchLabels:
+      app: fungjai-webhook
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: fungjai-webhook
+    spec:
+      containers:
+        - name: fungjai-webhook
+          image: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook:0.5
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: MINIO_ENDPOINT
+            value: "10.244.0.135:9000"
+          - name: CHANNEL_SECRET
+            value: "895ab25460181b64d971a4b63e66a3d7"
+          - name: CHANNEL_ACCESS_TOKEN
+            value: "uzTYXnis2k+qH8fcKm+KJ9QKzhmj1TIvE8SNbCYOmG1Rr89LnvOUUmjZrDe3snlhxsAxxUDrUIpjaeExZfUI309U1BmpIi+QDSiU0bRq/2HsRHzhVWEFJZarabE1dl47Ibr7/RB0KKnAO67rAmghsgdB04t89/1O/w1cDnyilFU="
+          - name: MINIO_ACCESS_KEY_ID
+            value: "8ciL1trAcy05RF1A"
+          - name: MINIO_SECRET_ACCESS_KEY
+            value: "XI07Cc1jEtzAOkyNqh8BZBfhx9greSwB"
+          - name: MINIO_BUCKET_NAME
+            value: "fungjai"
+          - name: MINIO_LOCATION
+            value: "ap-southeast-1"
+          - name: MINIO_FOLDER_NAME
+            value: "responses"
+          - name: MINIO_RESPONSE_TYPE
+            value: "mood"
+
+          # envFrom:
+          #   - secretRef:
+          #       name: webhook-secrets
+          ports: 
+          - containerPort: 1323
+      imagePullSecrets:
+        - name: regcred
