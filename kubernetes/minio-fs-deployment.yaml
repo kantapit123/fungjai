@@ -47,11 +47,9 @@ spec:
         - -c
         args: 
         - minio server /data --console-address :9090
-        env:
-        - name: MINIO_ROOT_USER
-          value: "minio"
-        - name: MINIO_ROOT_PASSWORD
-          value: "minio123"
+        envFrom:
+          - secretRef:
+              name: webhook-secrets
         ports:
         - containerPort: 9000
           hostPort: 9000
