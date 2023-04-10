@@ -118,7 +118,7 @@ func main() {
 		// 		}
 		// 	}
 		// }
-		topics := "user-messages"
+		topics := "test"
 		for _, event := range events_bot {
 			if event.Type == linebot.EventTypeMessage {
 				switch message := event.Message.(type) {
