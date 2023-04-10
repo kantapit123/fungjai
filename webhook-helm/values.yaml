@@ -1,0 +1,27 @@
+service:
+  port: 1323
+  targetPort: 1323
+
+image:
+  pullSecret:
+    name: regcred
+  repository: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook
+  tag: "0.7.2"
+  env:
+    endpoint: "10.244.0.154"
+    endpointPort: "9000"
+    bucket: fungjai
+    location: ap-southeast-1
+    folder: responses
+    responseType: mood
+  envFrom:
+    secretRef:
+      name: webhook-secrets
+
+
+
+deploy:
+  containerPort: 1323
+
+
+
