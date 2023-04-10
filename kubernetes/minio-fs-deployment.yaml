@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-service
+spec:
+  selector: 
+    app: my-minio-fs
+  # type: NodePort
+  ports:
+  - name: minio-http
+    port: 9000
+    targetPort: 9000
+  - name: minio-data
+    port: 9090
+    targetPort: 9090
+    # nodePort: 30000
+
+---              
+## Run minio fs deployment.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-minio-fs
+spec:
+  selector:
+    matchLabels:
+      app: my-minio-fs
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: my-minio-fs
+    spec:
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: my-minio-fs-pvc
+      containers:
+      - name: my-minio-fs
+        image: quay.io/minio/minio:latest
+        volumeMounts:
+        - mountPath: /data
+          name: localvolume # Corresponds to the `spec.volumes` Persistent Volume
+        command:
+        - /bin/bash
+        - -c
+        args: 
+        - minio server /data --console-address :9090
+        envFrom:
+          - secretRef:
+              name: webhook-secrets
+        ports:
+        - containerPort: 9000
+          hostPort: 9000
+      volumes:
+      - name: localvolume
+        hostPath: # MinIO generally recommends using locally-attached volumes
+          path: /mnt/disk1/data # Specify a path to a local drive or volume on the Kubernetes worker node
+          type: DirectoryOrCreate # The path to the last directory must exist

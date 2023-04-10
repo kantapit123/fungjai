@@ -1,24 +1,21 @@
 version: '3'
 
 services:
-  zookeeper:
-    image: wurstmeister/zookeeper
-    container_name: zookeeper
+  webhook:
+    image: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook:0.7.2
+    container_name: docker-webhook
     ports:
-      - "2181:2181"
-  kafka:
-    image: wurstmeister/kafka
-    container_name: kafka
+      - "1323:1323"
+    env_file:
+      - .env
+
+  minio:
+    image: minio/minio:RELEASE.2023-02-10T18-48-39Z
     ports:
-      - "9092:9092"
-    environment:
-      KAFKA_ADVERTISED_HOST_NAME: localhost
-      KAFKA_CREATE_TOPICS: "test:1:1"
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-  # wenhook:
-  #   image: docker-webhook-server
-  #   container_name: docker-webhook
-  #   ports:
-  #     - "1323:1323"
-    
-    
+      - '9000:9000'
+      - '9090:9090'
+    volumes:
+      - './minio_data:/data'
+    env_file:
+      - .env
+    command: server --console-address ":9090" /data

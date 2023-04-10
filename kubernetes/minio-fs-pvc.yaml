@@ -1,0 +1,11 @@
+ ## Create persistent volume claim for minio to store data.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-minio-fs-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
