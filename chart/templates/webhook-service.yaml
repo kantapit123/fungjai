@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-service
+spec:
+  selector: 
+    app: fungjai-webhook
+  ports:
+  - port: {{ .Values.service.port }}
+    targetPort: {{ .Values.service.targetPort }}

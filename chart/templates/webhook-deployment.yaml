@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-deployment
+spec:
+  selector:
+    matchLabels:
+      app: fungjai-webhook
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: fungjai-webhook
+    spec:
+      containers:
+        - name: fungjai-webhook
+          image: {{ template "webhook.image" . }}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: {{ .Values.image.envFrom.secretRef.name }}
+            - configMapRef:
+                name: {{ .Values.image.envFrom.configMapRef.name }}
+          ports: 
+          - containerPort: {{ .Values.deploy.containerPort }}
+      {{- if .Values.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecret.name }}
+      {{- end }}

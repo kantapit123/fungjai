@@ -1,0 +1,34 @@
+service:
+  port: 1323
+  targetPort: 1323
+
+image:
+  pullSecret:
+    name: regcred
+  repository: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook
+  tag: "0.7.2"
+  envFrom:
+    secretRef:
+      name: webhook-secrets
+    configMapRef:
+      name: webhook-configmap
+
+deploy:
+  containerPort: 1323
+
+minio:
+  resources:
+    requests:
+      memory: 2Gi
+
+  rootUser: rootuser
+  rootPassword: rootpass123
+
+  mode: standalone
+  replicas: 1
+
+configMap:
+  endpoint: "fungjai-minio.fungjai"
+
+
+
