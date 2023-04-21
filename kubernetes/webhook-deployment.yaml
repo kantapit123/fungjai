@@ -28,20 +28,11 @@ spec:
         - name: fungjai-webhook
           image: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook:0.7.2
           imagePullPolicy: IfNotPresent
-          env:
-          - name: MINIO_ENDPOINT
-            value: "10.244.0.154:9000"
-          - name: MINIO_BUCKET_NAME
-            value: "fungjai"
-          - name: MINIO_LOCATION
-            value: "ap-southeast-1"
-          - name: MINIO_FOLDER_NAME
-            value: "responses"
-          - name: MINIO_RESPONSE_TYPE
-            value: "mood"
           envFrom:
             - secretRef:
                 name: webhook-secrets
+            - configMapRef:
+                name: webhook-configmap
           ports: 
           - containerPort: 1323
       imagePullSecrets:
