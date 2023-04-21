@@ -12,3 +12,5 @@ clickhouse_data
 .env
 
 .gitignore
+
+chart/charts/*.tgz
