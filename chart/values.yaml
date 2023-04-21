@@ -20,15 +20,38 @@ minio:
   resources:
     requests:
       memory: 2Gi
-
   rootUser: rootuser
   rootPassword: rootpass123
-
+  accessKey: mEOo8Tw0c1ZindTp
+  secretKey: M0jGwjgT5eSAYt4d8HfrhwLaSZP14Fst
   mode: standalone
   replicas: 1
+  persistence:
+    enabled: false
+    storageClass: efs-sc
+    accessMode: ReadWriteOnce
+    size: 2Gi
+  mountPath: /export
+  certsPath: /etc/minio/certs/
+  configPathmc: /etc/minio/mc/
+  users: null
+  securityContext:
+    enabled: true
+    runAsUser: 50008
+    runAsGroup: 50008
+    fsGroup: 50008
+  consoleIngress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-cluster-lb-dev
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hosts:
+      - fungjai-minio-dev.dbiteam.com
 
 configMap:
-  endpoint: "fungjai-minio.fungjai"
+  endpoint: "fungjai-minio.fungjai:9000"
 
-
-
+  # fungjai-minio.fungjai
