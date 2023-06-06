@@ -394,7 +394,22 @@ func main() {
 				// if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(messageResponse)).Do(); err != nil {
 				// 	log.Print(err)
 				// }
-				messageResponse := fmt.Sprintf("ขอบคุณที่แชร์ความรู้สึกกับเรานะ💓\nคำตอบของคุณคือ " + display_string + "✨")
+				var display_mood_string string
+				var messageResponse string
+				if display_string == "1" {
+					display_mood_string = "แย่มาก"
+					messageResponse = fmt.Sprintf("ขอบคุณที่แชร์ความรู้สึกกับเรานะ💓\nคำตอบของคุณคือ " + display_mood_string + "\nมีอะไรบอกเราได้นะเป็นห่วงนะ 🥺")
+				} else if display_string == "2" {
+					display_mood_string = "แย่"
+					messageResponse = fmt.Sprintf("ขอบคุณที่แชร์ความรู้สึกกับเรานะ💓\nคำตอบของคุณคือ " + display_mood_string + "\nไม่เป็นไรนะสู้ ๆ 🤗")
+				} else if display_string == "3" {
+					display_mood_string = "ดี"
+					messageResponse = fmt.Sprintf("ขอบคุณที่แชร์ความรู้สึกกับเรานะ💓\nคำตอบของคุณคือ " + display_mood_string + "\nเยี่ยมไปเลย พรุ่งนี้ต้องดีกว่านี้้แน่นอน ✌🏻")
+				} else if display_string == "4" {
+					display_mood_string = "ดีมาก"
+					messageResponse = fmt.Sprintf("ขอบคุณที่แชร์ความรู้สึกกับเรานะ💓\nคำตอบของคุณคือ " + display_mood_string + "\nขอให้ดีแบบนี้ต่อไปน้าา ✨")
+				}
+
 				replyMessage(messageResponse, bot, event.ReplyToken)
 
 				currentTime := time.Now().UTC()
@@ -521,7 +536,7 @@ func runCronJobs(jsonData []byte, botClient *linebot.Client) {
 	s := cron.New(cron.WithLocation(time.UTC))
 
 	// Broadcast At minute 30 past hour 8, 11, and 16 on every day-of-week from Monday through Friday.
-	s.AddFunc("30 1,4,10 * * 1-5", func() {
+	s.AddFunc("30 8 * * 1-5", func() {
 		BroadcastFlexMessage(jsonData, botClient)
 	})
 	// s.AddFunc("@hourly", func() {

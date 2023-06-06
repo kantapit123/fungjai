@@ -6,7 +6,7 @@ image:
   pullSecret:
     name: regcred
   repository: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook
-  tag: "0.7.2"
+  tag: "0.8.0"
   envFrom:
     secretRef:
       name: webhook-secrets
@@ -15,6 +15,51 @@ image:
 
 deploy:
   containerPort: 1323
+
+metabase:
+  replicaCount: 1
+  # service:
+  #   externalPort: 3030
+  #   internalPort: 3000
+  image:
+    repository: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/metabase-clickhouse
+    tag: v1.0.0
+    pullSecrets:
+      - regcred
+
+clickhouse:
+
+  shards: 1
+  replicaCount: 1
+
+  auth:
+    username: admin
+    password: pass123
+
+  service:
+    ports:
+      tcp: 9003
+      https: 443
+
+  zookeeper:
+    replicaCount: 1
+
+  persistence:
+    enabled: true
+    storageClass: efs-sc
+    accessMode: ReadWriteMany
+    size: 2Gi
+
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-cluster-lb-dev
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hostname: fungjai-clickhouse-dev.dbiteam.com
+
 
 minio:
   resources:
@@ -27,9 +72,9 @@ minio:
   mode: standalone
   replicas: 1
   persistence:
-    enabled: false
-    storageClass: efs-sc
-    accessMode: ReadWriteOnce
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteMany
     size: 2Gi
   mountPath: /export
   certsPath: /etc/minio/certs/
@@ -40,7 +85,7 @@ minio:
     runAsUser: 50008
     runAsGroup: 50008
     fsGroup: 50008
-  consoleIngress:
+  ingress:
     enabled: true
     ingressClassName: alb
     annotations:
@@ -50,6 +95,17 @@ minio:
     path: /
     hosts:
       - fungjai-minio-dev.dbiteam.com
+  consoleIngress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-cluster-lb-dev
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hosts:
+      - fungjai-minio-console-dev.dbiteam.com
+
 
 configMap:
   endpoint: "fungjai-minio.fungjai:9000"
