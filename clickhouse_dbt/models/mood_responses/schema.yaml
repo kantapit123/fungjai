@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+- name: clickhouse_dbt
+  tables:
+  - name: mood
+models:
+  - name: source_mood
+    columns:
+      - name: timestamp
+        tests:
+          - not_null
+  - name: stg_mood
+    columns:
+      - name: mood
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['1', '2', '3', '4']

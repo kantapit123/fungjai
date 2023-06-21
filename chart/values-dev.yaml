@@ -1,0 +1,121 @@
+service:
+  port: 1323
+  targetPort: 1323
+
+image:
+  pullSecret:
+    name: regcred
+  repository: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook
+  tag: "0.8.0"
+  envFrom:
+    secretRef:
+      name: webhook-secrets
+    configMapRef:
+      name: webhook-configmap
+
+deploy:
+  containerPort: 1323
+
+ingress:
+  host: fungjai-dev.dbiteam.com
+
+metabase:
+  replicaCount: 1
+  service:
+    port: 3000
+    targetPort: 3000
+    # externalPort: 3030
+    # internalPort: 3000
+  image:
+    repository: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/metabase-clickhouse
+    tag: v1.0.0
+    pullSecret: 
+      name: regcred
+  deploy:
+    containerPort: 3000
+
+clickhouse:
+  enabled: true
+  shards: 1
+  replicaCount: 1
+
+  auth:
+    username: admin
+    password: pass123
+
+  service:
+    ports:
+      tcp: 9003
+      https: 443
+
+  zookeeper:
+    replicaCount: 1
+
+  persistence:
+    enabled: true
+    storageClass: efs-sc
+    accessMode: ReadWriteMany
+    size: 2Gi
+
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-cluster-lb-dev
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hostname: fungjai-clickhouse-dev.dbiteam.com
+
+
+minio:
+  enabled: false
+  resources:
+    requests:
+      memory: 2Gi
+  rootUser: rootuser
+  rootPassword: rootpass123
+  accessKey: mEOo8Tw0c1ZindTp
+  secretKey: M0jGwjgT5eSAYt4d8HfrhwLaSZP14Fst
+  mode: standalone
+  replicas: 1
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteMany
+    size: 2Gi
+  mountPath: /export
+  certsPath: /etc/minio/certs/
+  configPathmc: /etc/minio/mc/
+  users: null
+  securityContext:
+    enabled: true
+    runAsUser: 50008
+    runAsGroup: 50008
+    fsGroup: 50008
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-cluster-lb-dev
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hosts:
+      - fungjai-minio-dev.dbiteam.com
+  consoleIngress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-cluster-lb-dev
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hosts:
+      - fungjai-minio-console-dev.dbiteam.com
+
+
+configMap:
+  endpoint: "fungjai-minio.fungjai:9000"
+
+  # fungjai-minio.fungjai
