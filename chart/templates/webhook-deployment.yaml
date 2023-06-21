@@ -18,14 +18,14 @@ spec:
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef:
-                name: {{ .Values.image.envFrom.secretRef.name }}
+                name: {{ .Values.webhook.image.envFrom.secretRef.name }}
             - configMapRef:
-                name: {{ .Values.image.envFrom.configMapRef.name }}
+                name: {{ .Values.webhook.image.envFrom.configMapRef.name }}
           # command: ["/bin/sh", "-ec", "sleep 1000"] 
           # [ "sleep", "infinity" ]
           ports: 
-          - containerPort: {{ .Values.deploy.containerPort }}
-      {{- if .Values.image.pullSecret }}
+          - containerPort: {{ .Values.webhook.deploy.containerPort }}
+      {{- if .Values.webhook.image.pullSecret }}
       imagePullSecrets:
-        - name: {{ .Values.image.pullSecret.name }}
+        - name: {{ .Values.webhook.image.pullSecret.name }}
       {{- end }}

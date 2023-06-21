@@ -6,5 +6,5 @@ spec:
   selector: 
     app: fungjai-webhook
   ports:
-  - port: {{ .Values.service.port }}
-    targetPort: {{ .Values.service.targetPort }}
+  - port: {{ .Values.webhook.service.port }}
+    targetPort: {{ .Values.webhook.service.targetPort }}
