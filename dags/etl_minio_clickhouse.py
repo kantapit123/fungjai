@@ -5,6 +5,7 @@ from io import BytesIO
 from airflow.operators.empty import EmptyOperator
 from minio import Minio
 import pandas as pd
+import clickhouse_connect
 
 
 default_args = {
@@ -41,13 +42,6 @@ with DAG(
         access_key = "minio123"
         secret_key = "minio123mak"
         bucket_name = "fungjai"
-
-        # Prod
-        # host = "fungjai-minio.dbiteam.com"
-        # access_key = "rootuser"
-        # secret_key = "rootpass123"
-        # bucket_name = "fungjai"
-
         prefix = "responses/mood/"
 
         # Connect to minio
@@ -74,73 +68,11 @@ with DAG(
         print(df.to_string())
         print(df.dtypes)
 
-        # # List objects information.
-
-        # prefix = "responses/mood/"
-        # file_save_dir = "path/to/save/the/objects/"
-
-        # # Get the list of objects that match the pattern
-        # objects = minio_client.list_objects(bucket_name
-        # , prefix=prefix
-        # , recursive=True)
-        # # Iterate over the objects and create a DataFrame from each file
-        # data_frames = []
-        # # Iterate over the objects and download them
-        # for obj in objects:
-        #     object_name = obj.object_name
-        #     if object_name.endswith('.json'):
-        #         parts = object_name.split('/')
-        #         folder_name = '/'.join(parts[:-1])
-        #         # Extract the file name from the object's full path
-        #         file_name = parts[-1]
-        #         print("Folder:", folder_name)
-        #         print("File:", file_name)
-        #         file_path = f"{bucket_name}/{folder_name}/{file_name}"
-        #         # Read the JSON file into a DataFrame
-        #         data_frame = pd.read_json(obj)
-        #         data_frames.append(data_frame)
-
-        # # Concatenate all DataFrames into a single DataFrame
-        # combined_data_frame = pd.concat(data_frames, ignore_index=True)
-        # print(combined_data_frame)
-
-        # # Get data from minio
-        # obj = minio_client.get_object(
-        #     bucket,
-        #     key,
-        # )
-
-        # df = pd.read_csv(obj, index_col=False)
-        # print("data", df)
-
-        # Push to clickhouse
-        import clickhouse_connect
-
         client = clickhouse_connect.get_client(
             host="click_server", port="8123", username="default"
         )
-
-        # data = df.values.tolist()
-        # table_name = 'test3'
-        # client.insert("test2", data, column_names=["type"
-        # , "postback"
-        # , "webhookEventId"
-        # , "deliveryContext"
-        # , "timestamp"
-        # , "source"
-        # , "replyToken"
-        # , "mode"])
-        # client.insert_df(table=table_name,df=df.astype(str),database='default')
-        # client.insert_df("YourTable", df)
-        # DEV
         client.command(
-            """INSERT INTO mood_responses
-             SELECT *
-              FROM s3('http://minio:9000/fungjai/responses/mood/*/*.json'
-              , 'minio123'
-              , 'minio123mak'
-              , 'JSONEachRow')
-              """
+            "INSERT INTO mood_responses SELECT * FROM s3('http://minio:9000/fungjai/responses/mood/*/*.json', 'minio123', 'minio123mak', 'JSONEachRow')"
         )
         # Prod
         # client.command("INSERT INTO mood_responses SELECT * FROM s3(
