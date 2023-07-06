@@ -72,7 +72,14 @@ with DAG(
             host="click_server", port="8123", username="default"
         )
         client.command(
-            "INSERT INTO mood_responses SELECT * FROM s3('http://minio:9000/fungjai/responses/mood/*/*.json', 'minio123', 'minio123mak', 'JSONEachRow')"
+            """
+            INSERT INTO mood_responses SELECT * FROM s3(
+                'http://minio:9000/fungjai/responses/mood/*/*.json',
+                'minio123', 
+                minio123mak',
+                'JSONEachRow'
+                )
+            """
         )
         # Prod
         # client.command("INSERT INTO mood_responses SELECT * FROM s3(
