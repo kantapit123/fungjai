@@ -18,7 +18,7 @@ webhook:
     containerPort: 1323
   
   configMap:
-    endpoint: "fungjai-minio-dev.dbiteam.com"
+    endpoint: "fungjai-minio.fungjai:9000"
 
   ingress:
     host: fungjai-dev.dbiteam.com
@@ -84,7 +84,7 @@ clickhouse:
 
   persistence:
     enabled: true
-    storageClass: efs
+    storageClass: efs-sc
     accessMode: ReadWriteMany
     size: 2Gi
 
@@ -112,7 +112,7 @@ minio:
   replicas: 1
   persistence:
     enabled: true
-    storageClass: efs
+    storageClass: ""
     accessMode: ReadWriteMany
     size: 2Gi
   mountPath: /export
@@ -121,9 +121,9 @@ minio:
   users: null
   securityContext:
     enabled: true
-    runAsUser: 1001
-    runAsGroup: 1001
-    fsGroup: 1001
+    runAsUser: 50008
+    runAsGroup: 50008
+    fsGroup: 50008
   ingress:
     enabled: true
     ingressClassName: alb

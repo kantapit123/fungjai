@@ -5,22 +5,22 @@ from confluent_kafka import Consumer
 from datetime import datetime
 from minio import Minio
 import json
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import os
 
-load_dotenv()
+# load_dotenv()
 
 
 def upload_to_minio(data_json, timestamp, hash_userId):
     # minio config
-    MINIO_ACCESS_KEY_ID = os.getenv("MINIO_ACCESS_KEY_ID")  # "minio123"
-    MINIO_SECRET_ACCESS_KEY = os.getenv("MINIO_SECRET_ACCESS_KEY")  # "minio123mak"
+    MINIO_USER_ID = os.getenv("MINIO_USER_ID")  # "minio123"
+    MINIO_USER_PASSWORD = os.getenv("MINIO_USER_PASSWORD")  # "minio123mak"
     MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")  # "localhost:9000"
-    MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")  # "test-buckets"
+    MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")  # "fungjai"
     MINIO_CLIENT = Minio(
         MINIO_ENDPOINT,
-        access_key=MINIO_ACCESS_KEY_ID,
-        secret_key=MINIO_SECRET_ACCESS_KEY,
+        access_key=MINIO_USER_ID,
+        secret_key=MINIO_USER_PASSWORD,
         secure=False,
     )
 
@@ -43,13 +43,13 @@ def upload_to_minio(data_json, timestamp, hash_userId):
 
 
 # kafka config
-BOOTSTRAP_SERVERS = os.getenv("BOOTSTRAP_SERVERS")
-KAFKA_GROUP = os.getenv("KAFKA_GROUP")
+boots = os.getenv("BOOTSTRAP_SERVERS")
+ka = os.getenv("KAFKA_GROUP")
 
 consumer = Consumer(
     {
-        "bootstrap.servers": "kafka:9092",
-        "group.id": "my-group",
+        "bootstrap.servers": "fungjai-kafka.fungjai:9092",
+        "group.id": "my-consumer-group",
         "auto.offset.reset": "earliest",
     }
 )

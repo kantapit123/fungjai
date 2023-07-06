@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: metabase-deployment
+  name: fungjai-metabase-deployment
 spec:
   selector:
     matchLabels:
@@ -18,7 +18,14 @@ spec:
           imagePullPolicy: IfNotPresent
           ports: 
           - containerPort: {{ .Values.metabase.deploy.containerPort }}
+          volumeMounts:
+          - mountPath: metabase.db
+            name: metabase-data
       {{- if .Values.metabase.image.pullSecret }}
       imagePullSecrets:
         - name: {{ .Values.metabase.image.pullSecret.name }}
       {{- end }}
+      volumes:
+      - name: metabase-data
+        persistentVolumeClaim:
+          claimName: metabase-pvc
