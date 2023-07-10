@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from airflow.models import DAG
+from airflow.models import DAG, Variable
 from airflow.decorators import task
 from io import BytesIO
 from airflow.operators.empty import EmptyOperator
@@ -7,6 +7,25 @@ from minio import Minio
 import pandas as pd
 import clickhouse_connect
 
+DOC_MD = """
+
+### Prerequisites
+
+#### Variables
+    Import this variables.json into airflow
+    {
+        "clickhouse_host_name": "fungjai-clickhouse-dev.dbiteam.com",
+        "clickhouse_interface": "https",
+        "clickhouse_password": "🔑",
+        "clickhouse_port": 443,
+        "clickhouse_username": "admin",
+        "minio_access_key": "🔑",
+        "minio_bucket_name": "fungjai",
+        "minio_host_name": "fungjai-minio-dev.dbiteam.com",
+        "minio_prefix": "responses/mood/",
+        "minio_secret_key": "🔑"
+    }
+"""
 
 default_args = {
     "owner": "airflow",
@@ -31,33 +50,28 @@ with DAG(
 
     @task
     def etl_minio_to_clickhouse():
-        # Config
-        # host = Variable.get("host")
-        # access_key = Variable.get("access_key")
-        # secret_key = Variable.get("secret_key")
-        # bucket = Variable.get("bucket")
 
-        # DEV
-        host = "minio:9000"
-        access_key = "minio123"
-        secret_key = "minio123mak"
-        bucket_name = "fungjai"
-        prefix = "responses/mood/"
+        minio_host_name = Variable.get("minio_host_name")
+        minio_access_key = Variable.get("minio_access_key")
+        minio_secret_key = Variable.get("minio_secret_key")
+        minio_bucket_name = Variable.get("minio_bucket_name")
+        minio_prefix = Variable.get("minio_prefix")
 
         # Connect to minio
         minio_client = Minio(
-            host, access_key=access_key, secret_key=secret_key, secure=False
+            minio_host_name,
+            access_key=minio_access_key,
+            secret_key=minio_secret_key,
+            secure=False,
         )
         # key = "responses"
-        objects = minio_client.list_objects(bucket_name, prefix=prefix, recursive=True)
+        objects = minio_client.list_objects(minio_bucket_name, prefix=minio_prefix, recursive=True)
         df = pd.DataFrame()
         for obj in objects:
             print(obj.object_name)
-            if obj.object_name.endswith(
-                ".json"
-            ):  # Ensure the object has the .json extension
+            if obj.object_name.endswith(".json"):  # Ensure the object has the .json extension
                 # Download the file from MinIO
-                data = minio_client.get_object(bucket_name, obj.object_name)
+                data = minio_client.get_object(minio_bucket_name, obj.object_name)
                 # Read the file content into a BytesIO object
                 file_data = BytesIO(data.read())
                 # Convert the data to a pandas DataFrame
@@ -67,27 +81,29 @@ with DAG(
 
         print(df.to_string())
         print(df.dtypes)
+        clickhouse_interface = Variable.get("clickhouse_interface")
+        clickhouse_host = Variable.get("clickhouse_host_name")
+        clickhouse_port = Variable.get("clickhouse_port")
+        clickhouse_username = Variable.get("clickhouse_username")
+        clickhouse_password = Variable.get("clickhouse_password")
 
-        client = clickhouse_connect.get_client(
-            host="click_server", port="8123", username="default"
+        clickhouse_client = clickhouse_connect.get_client(
+            # interface=clickhouse_interface,
+            host=clickhouse_host,
+            port=clickhouse_port,
+            username=clickhouse_username,
+            # password=clickhouse_password,
         )
-        client.command(
-            """
-            INSERT INTO mood_responses SELECT * FROM s3(
-                'http://minio:9000/fungjai/responses/mood/*/*.json',
-                'minio123', 
-                'minio123mak',
+
+        clickhouse_client.command(
+            f"""INSERT INTO mood_responses SELECT * FROM s3(
+                'http://{minio_host_name}/{minio_bucket_name}/{minio_prefix}*/*.json',
+                '{minio_access_key}',
+                '{minio_secret_key}',
                 'JSONEachRow'
                 )
             """
         )
-        # Prod
-        # client.command("INSERT INTO mood_responses SELECT * FROM s3(
-        # 'https://fungjai-minio.dbiteam.com/fungjai/responses/mood/*/*.json',
-        # 'rootuser', 'rootpass123', '
-        # JSONEachRow')")
-
-        # print(query_result)
 
     end = EmptyOperator(task_id="end")
 
