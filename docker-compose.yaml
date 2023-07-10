@@ -163,7 +163,7 @@ services:
     user: "0:0"
     volumes:
       - .:/sources
-      
+
   zookeeper:
     image: wurstmeister/zookeeper
     container_name: fungjai-zookeeper
@@ -204,7 +204,7 @@ services:
       - airflow-webserver
 
   webhook:
-    image: fungjai-webhook:1.0.8
+    image: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook:1.0.0
     container_name: fungjai-go-webhook
     ports:
       - "1323:1323"
@@ -228,6 +228,13 @@ services:
     depends_on:
       - postgres_metabase
 
+  consumer-kafka:
+    image: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/kafka-consumer:1.0.0
+    container_name: consumer-kafka
+    env_file:
+      - .env
+    depends_on:
+      - metabase
 
   postgres_metabase:
     image: postgres:13
@@ -242,14 +249,6 @@ services:
       interval: 5s
       retries: 5
     restart: always
-
-  consumer-kafka:
-    image: fungjai-python-consumer:1.0.2
-    container_name: consumer-kafka
-    env_file:
-      - .env
-    depends_on:
-      - webhook
 
 volumes:
   postgres-db-volume:

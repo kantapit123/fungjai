@@ -53,6 +53,15 @@ consumer = Consumer(
         "auto.offset.reset": "earliest",
     }
 )
+
+# ------------For locals
+# consumer = Consumer(
+#     {
+#         "bootstrap.servers": "kafka:9092",
+#         "group.id": "my-consumer-group",
+#         "auto.offset.reset": "earliest",
+#     }
+# )
 consumer.subscribe(["mood_responses"])
 
 # pull data from kafka

@@ -76,7 +76,7 @@ with DAG(
             INSERT INTO mood_responses SELECT * FROM s3(
                 'http://minio:9000/fungjai/responses/mood/*/*.json',
                 'minio123', 
-                minio123mak',
+                'minio123mak',
                 'JSONEachRow'
                 )
             """
