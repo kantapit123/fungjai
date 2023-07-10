@@ -17,8 +17,11 @@ webhook:
   ingress:
     host: fungjai.dbiteam.com
   configMap:
-    endpoint: "fungjai-minio.fungjai:9000"
-
+    endpoint: fungjai-minio.fungjai:9000
+    bucketname: fungjai
+    location: ap-southeast-1
+    foldername: responses
+    type: mood
 
 clickhouse:
   enabled: true
@@ -103,6 +106,7 @@ minio:
 metabase:
   replicaCount: 1
   service:
+    name: metabase-service
     port: 3000
     targetPort: 3000
   image:
@@ -114,7 +118,6 @@ metabase:
     containerPort: 3000
   ingress:
     host: metabase.dbiteam.com
-
 
 efs:
   id: fs-f92098b9

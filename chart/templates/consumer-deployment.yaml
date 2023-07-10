@@ -21,8 +21,6 @@ spec:
                 name: {{ .Values.consumer.image.envFrom.secretRef.name }}
             - configMapRef:
                 name: {{ .Values.consumer.image.envFrom.configMapRef.name }}
-          # command: ["/bin/sh", "-ec", "sleep 1000"] 
-          # [ "sleep", "infinity" ]
       {{- if .Values.consumer.image.pullSecret }}
       imagePullSecrets:
         - name: {{ .Values.consumer.image.pullSecret.name }}

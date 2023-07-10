@@ -15,8 +15,8 @@ spec:
       paths:
       - backend:
           service:
-            name: webhook-service
+            name: {{ .Values.webhook.service.name }}
             port:
-              number: 1323
+              number: {{ .Values.webhook.service.port }}
         path: /
         pathType: Prefix

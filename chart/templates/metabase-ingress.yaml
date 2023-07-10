@@ -14,8 +14,8 @@ spec:
       paths:
       - backend:
           service:
-            name: metabase-service
+            name: {{ .Values.metabase.service.name }}
             port:
-              number: 3000
+              number: {{ .Values.metabase.service.port }}
         path: /
         pathType: Prefix

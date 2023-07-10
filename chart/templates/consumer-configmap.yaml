@@ -4,14 +4,7 @@ metadata:
   name: consumer-configmap
 data: 
   MINIO_ENDPOINT: {{ .Values.consumer.configMap.endpoint }}
-  MINIO_BUCKET_NAME: "fungjai"
-  MINIO_LOCATION: "ap-southeast-1"
-  MINIO_FOLDER_NAME: "responses"
-  MINIO_RESPONSE_TYPE: "mood"
-  # MINIO_ACCESS_KEY_ID: rootuser
-  # MINIO_SECRET_ACCESS_KEY: rootpass123
-  # KAFKA_TOPIC_NAME: mood_responses
-
-  # BOOTSTRAP_SERVERS: fungjai-kafka.fungjai:9092
-  # KAFKA_GROUP: my-consumer-group
-  # KAFKA_TOPIC_NAME: "mood_responses"
+  MINIO_BUCKET_NAME: {{ .Values.consumer.configMap.bucketname }}
+  MINIO_LOCATION: {{ .Values.consumer.configMap.location }}
+  MINIO_FOLDER_NAME: {{ .Values.consumer.configMap.foldername }}
+  MINIO_RESPONSE_TYPE: {{ .Values.consumer.configMap.type }}
