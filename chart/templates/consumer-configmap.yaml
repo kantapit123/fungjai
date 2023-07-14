@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: consumer-configmap
+data: 
+  MINIO_ENDPOINT: {{ .Values.consumer.configMap.endpoint }}
+  MINIO_BUCKET_NAME: {{ .Values.consumer.configMap.bucketname }}
+  MINIO_LOCATION: {{ .Values.consumer.configMap.location }}
+  MINIO_FOLDER_NAME: {{ .Values.consumer.configMap.foldername }}
+  MINIO_RESPONSE_TYPE: {{ .Values.consumer.configMap.type }}

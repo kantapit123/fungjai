@@ -1,0 +1,27 @@
+clickhouse_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: clickhouse
+      schema: clickhouse_dbt
+      host: click_server
+      port: 8123
+      user: default
+      password: ''
+      secure: False
+    ci-dev:
+      type: clickhouse
+      schema: clickhouse_dbt
+      host: fungjai-clickhouse-dev.dbiteam.com
+      port: 443
+      user: admin
+      password: pass123
+      secure: True
+    prod:
+      type: clickhouse
+      schema: clickhouse_dbt
+      host: fungjai-clickhouse.dbiteam.com
+      port: 443
+      user: admin
+      password: pass123
+      secure: True

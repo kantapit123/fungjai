@@ -2,9 +2,18 @@ apiVersion: v2
 name: fungjai
 description: A Helm chart for Fungjai webhook
 type: application
-version: 1.0.0
+version: 1    
 appVersion: "1.0.0"
 dependencies: 
 - name: minio
-  version: 5.0.7
+  condition: minio.enabled
+  version: 5.0.8
   repository: https://charts.min.io/
+- name: clickhouse
+  condition: clickhouse.enabled
+  version: 3.3.1
+  repository: https://charts.bitnami.com/bitnami
+- name: kafka
+  condition: kafka.enabled
+  version: 23.0.1
+  repository: oci://registry-1.docker.io/bitnamicharts

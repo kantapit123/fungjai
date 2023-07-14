@@ -16,13 +16,14 @@ x-airflow-common:
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
+    - ./clickhouse_dbt:/opt/airflow/dbt/
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -30,41 +31,6 @@ x-airflow-common:
       condition: service_healthy
 
 services:
-  webhook:
-    image: docker-webhook-server:multistage-beta
-    container_name: fungjai-go-webhook
-    ports:
-      - "1323:1323"
-    env_file:
-      - .env
-      
-  zookeeper:
-    image: wurstmeister/zookeeper
-    container_name: fungjai-zookeeper
-    ports:
-      - '2181:2181'
-      
-  kafka:
-    image: wurstmeister/kafka
-    container_name: fungjai-kafka
-    ports:
-      - '9092:9092'
-    environment:
-      KAFKA_ADVERTISED_HOST_NAME: localhost
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: test:1:1
-
-  minio:
-    image: minio/minio:RELEASE.2023-02-10T18-48-39Z
-    ports:
-      - '9000:9000'
-      - '9090:9090'
-    volumes:
-      - './minio_data:/data'
-    env_file:
-      - .env
-    command: server --console-address ":9090" /data
-    
   postgres:
     image: postgres:13
     environment:
@@ -78,13 +44,6 @@ services:
       interval: 5s
       retries: 5
     restart: always
-
-  click_server:
-    image: clickhouse/clickhouse-server:22.3.18.37
-    ports:
-      - "8123:8123"
-    volumes:
-      - ./clickhouse_data:/var/lib/clickhouse
 
   redis:
     image: redis:7.0.8
@@ -205,6 +164,92 @@ services:
     volumes:
       - .:/sources
 
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: fungjai-zookeeper
+    ports:
+      - '2181:2181'
+      
+  kafka:
+    image: wurstmeister/kafka
+    container_name: fungjai-kafka
+    ports:
+      - '9092:9092'
+    env_file:
+      - .env
+    depends_on:
+      - zookeeper
+
+  minio:
+    image: minio/minio:RELEASE.2023-02-10T18-48-39Z
+    ports:
+      - '9000:9000'
+      - '9090:9090'
+    volumes:
+      - './minio_data:/data'
+    env_file:
+      - .env
+    command: server --console-address ":9090" /data
+    depends_on:
+      - airflow-webserver
+
+  click_server:
+    image: clickhouse/clickhouse-server:23.1.3.5-alpine
+    ports:
+      - "8123:8123"
+    volumes:
+      - ./click_data:/var/lib/clickhouse
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    depends_on:
+      - airflow-webserver
+
+  webhook:
+    image: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook:1.0.0
+    container_name: fungjai-go-webhook
+    ports:
+      - "1323:1323"
+    env_file:
+      - .env
+      
+  metabase:
+    image: '266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/metabase-clickhouse:1.0.1'
+    container_name: 'metabase-clickhouse'
+    environment:
+      MB_PLUGIN_CACHE_ENABLED: "false"
+      MB_DB_FILE: /metabase-data/metabase.db
+    ports:
+      - 3000:3000
+    hostname: metabase-moodytrack
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - ./metabase-data:/metabase-data
+
+    depends_on:
+      - postgres_metabase
+
+  consumer-kafka:
+    image: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/kafka-consumer:1.0.0
+    container_name: consumer-kafka
+    env_file:
+      - .env
+    depends_on:
+      - metabase
+
+  postgres_metabase:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: metabase
+      POSTGRES_PASSWORD: metabase
+      POSTGRES_DB: metabase
+    volumes:
+      - postgres-metabase-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "metabase"]
+      interval: 5s
+      retries: 5
+    restart: always
+
 volumes:
   postgres-db-volume:
-
+  postgres-metabase-volume:

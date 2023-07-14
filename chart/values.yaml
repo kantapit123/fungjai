@@ -1,34 +1,155 @@
-service:
-  port: 1323
-  targetPort: 1323
+webhook:
+  service:
+    name: webhook-service
+    port: 1323
+    targetPort: 1323
+  image:
+    pullSecret:
+      name: regcred
+    repository: 325067013020.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook
+    tag: "2.0.0"
+    envFrom:
+      secretRef:
+        name: webhook-secrets
+      configMapRef:
+        name: consumer-configmap
+  deploy:
+    containerPort: 1323
+  configMap:
+    endpoint: fungjai-minio.fungjai:9000
+  ingress:
+    host: fungjai.dbiteam.com
 
-image:
-  pullSecret:
-    name: regcred
-  repository: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook
-  tag: "0.7.2"
-  envFrom:
-    secretRef:
-      name: webhook-secrets
-    configMapRef:
-      name: webhook-configmap
+consumer:
+  image:
+    pullSecret:
+      name: regcred
+    repository: 325067013020.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/consumer
+    tag: "1.1.0"
+    envFrom:
+      secretRef:
+        name: webhook-secrets
+      configMapRef:
+        name: consumer-configmap
+  configMap:
+    endpoint: "fungjai-minio.fungjai:9000"
+    bucketname: fungjai
+    location: ap-southeast-1
+    foldername: responses
+    type: mood
 
-deploy:
-  containerPort: 1323
+metabase:
+  replicaCount: 1
+  service:
+    name: metabase-service
+    port: 3000
+    targetPort: 3000
+  image:
+    repository: 325067013020.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/metabase
+    tag: "1.0.1"
+    pullSecret: 
+      name: regcred
+  deploy:
+    containerPort: 3000
+  ingress:
+    host: metabase.dbiteam.com
+
+clickhouse:
+  enabled: true
+  shards: 1
+  replicaCount: 1
+  initdbScripts:
+    my_init_script.sh: |
+     #!/bin/bash
+     clickhouse client --user admin --password pass123 -q "CREATE TABLE IF NOT EXISTS mood_responses (type String,postback Tuple (data String),webhookEventId String,deliveryContext Tuple (isRedelivery UInt8),timestamp DateTime64(9),source Tuple (type String,userId String),replyToken String,mode String) ENGINE = MergeTree() ORDER BY timestamp SETTINGS readonly = 0;"
+  auth:
+    username: admin
+    password: pass123
+  service:
+    ports:
+      tcp: 9003
+      https: 443
+  zookeeper:
+    replicaCount: 1
+  persistence:
+    enabled: true
+    storageClass: efs-sc
+    accessModes: 
+      - ReadWriteMany
+    size: 2Gi
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-eks-alb
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hostname: fungjai-clickhouse.dbiteam.com
 
 minio:
+  enabled: true
   resources:
     requests:
       memory: 2Gi
-
   rootUser: rootuser
   rootPassword: rootpass123
-
+  accessKey: mEOo8Tw0c1ZindTp
+  secretKey: M0jGwjgT5eSAYt4d8HfrhwLaSZP14Fst
   mode: standalone
   replicas: 1
+  persistence:
+    enabled: true
+    storageClass: efs-sc
+    accessMode: ReadWriteMany
+    size: 2Gi
+  mountPath: /export
+  certsPath: /etc/minio/certs/
+  configPathmc: /etc/minio/mc/
+  users: null
+  securityContext:
+    enabled: true
+    runAsUser: 50008
+    runAsGroup: 50008
+    fsGroup: 50008
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-eks-alb
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hosts:
+      - fungjai-minio.dbiteam.com
+  consoleIngress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-eks-alb
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hosts:
+      - fungjai-minio-console.dbiteam.com
 
-configMap:
-  endpoint: "fungjai-minio.fungjai"
+kafka:
+  enabled: true
+  kraft:
+    enabled: true
+  zookeeper:
+    enabled: false
+  deleteTopicEnable: true
+  persistence:
+    enabled: true
+    storageClass: efs-sc
+    accessModes: 
+    - ReadWriteMany
+    size: 8Gi
+    podSecurityContext:
+      fsGroup: 1001
+    # existingClaim: fungjai-kafka
 
 
-
+efs:
+  id: fs-f92098b9

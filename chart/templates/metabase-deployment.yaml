@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fungjai-metabase-deployment
+spec:
+  selector:
+    matchLabels:
+      app: fungjai-metabase
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: fungjai-metabase
+    spec:
+      containers:
+        - name: fungjai-metabase
+          image: {{ template "metabase-clickhouse.image" . }}
+          imagePullPolicy: IfNotPresent
+          ports: 
+          - containerPort: {{ .Values.metabase.deploy.containerPort }}
+          volumeMounts:
+          - mountPath: metabase.db
+            name: metabase-data
+      {{- if .Values.metabase.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.metabase.image.pullSecret.name }}
+      {{- end }}
+      volumes:
+      - name: metabase-data
+        persistentVolumeClaim:
+          claimName: metabase-pvc

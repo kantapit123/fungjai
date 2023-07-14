@@ -5,26 +5,22 @@ WORKDIR /app
 COPY go.mod .
 COPY go.sum .
 COPY *.go .
-# COPY . .
+# COPY producer/ .
 
 RUN go mod download
 
-# ARG CHANNEL_SECRET
-# ARG CHANNEL_ACCESS_TOKEN
-# ARG BOOTSTRAP_SERVERS
-
-# RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux
-
-# # RUN go build -netgo fungjai .
-
-# RUN go build -tags netgo -a -v fungjai .
-
-RUN CGO_ENABLED=0 go build -tags netgo -a -v fungjai .
+RUN CGO_ENABLED=1 GOOS=linux go build -tags netgo -a -v fungjai .
+# RUN CGO_ENABLED=0 go build -tags netgo -a -v -o /app/fungjai .
+# RUN go build -tags musl -o fungjai .
 
 ## Deploy
-FROM alpine:3.15 
+FROM ubuntu:22.04
 
 WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y ca-certificates && \
+    update-ca-certificates
 
 COPY --from=build /app/fungjai .
 
@@ -32,4 +28,5 @@ EXPOSE 1323
 
 # CMD [ "sleep", "infinity" ]
 
-ENTRYPOINT [ "./fungjai" ]
+# ENTRYPOINT [ "/app/fungjai" ]
+CMD [ "/app/fungjai" ]

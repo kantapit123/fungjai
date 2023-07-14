@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -13,10 +12,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/labstack/echo/v4"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/robfig/cron/v3"
 )
 
@@ -29,6 +27,7 @@ type PostbackLineMessage struct {
 	RawSource          RawSource          `json:"source"`
 	ReplyToken         string             `json:"replyToken"`
 	Mode               string             `json:"mode"`
+	Hash_userId        string             `json:"hash_userId"`
 }
 type Postback struct {
 	Data string `json:"data"`
@@ -120,45 +119,47 @@ func main() {
 	}
 
 	// ------------Initialize a new MinIO client object
-	ctx := context.Background()
-	endpoint := os.Getenv("MINIO_ENDPOINT")                 //os.Getenv("MINIO_ENDPOINT")
-	accessKeyID := os.Getenv("MINIO_ACCESS_KEY_ID")         //os.Getenv("MINIO_ACCESS_KEY_ID")
-	secretAccessKey := os.Getenv("MINIO_SECRET_ACCESS_KEY") //os.Getenv("MINIO_SECRET_ACCESS_KEY")
-	useSSL := false                                         // Change to true if you want to use SSL
-	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
-		Secure: useSSL,
-	})
-	if err != nil {
-		log.Println("Error to Initialize a new MinIO client")
-		fmt.Println(err)
-	}
+	// ctx := context.Background()
+	// endpoint := os.Getenv("MINIO_ENDPOINT")                 //os.Getenv("MINIO_ENDPOINT")
+	// accessKeyID := os.Getenv("MINIO_ACCESS_KEY_ID")         //os.Getenv("MINIO_ACCESS_KEY_ID")
+	// secretAccessKey := os.Getenv("MINIO_SECRET_ACCESS_KEY") //os.Getenv("MINIO_SECRET_ACCESS_KEY")
+	// useSSL := false                                         // Change to true if you want to use SSL
+	// minioClient, err := minio.New(endpoint, &minio.Options{
+	// 	Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+	// 	Secure: useSSL,
+	// })
+	// if err != nil {
+	// 	log.Println("Error to Initialize a new MinIO client")
+	// 	fmt.Println(err)
+	// }
 
 	// ------------Make a new bucket.
-	bucketName := os.Getenv("MINIO_BUCKET_NAME")     //os.Getenv("MINIO_BUCKET_NAME")
-	location := os.Getenv("MINIO_LOCATION")          //os.Getenv("MINIO_LOCATION")
-	folderName := os.Getenv("MINIO_FOLDER_NAME")     //os.Getenv("MINIO_FOLDER_NAME")
-	responseType := os.Getenv("MINIO_RESPONSE_TYPE") //os.Getenv("MINIO_RESPONSE_TYPE")
+	// bucketName := os.Getenv("MINIO_BUCKET_NAME")     //os.Getenv("MINIO_BUCKET_NAME")
+	// location := os.Getenv("MINIO_LOCATION")          //os.Getenv("MINIO_LOCATION")
+	// folderName := os.Getenv("MINIO_FOLDER_NAME")     //os.Getenv("MINIO_FOLDER_NAME")
+	// responseType := os.Getenv("MINIO_RESPONSE_TYPE") //os.Getenv("MINIO_RESPONSE_TYPE")
 
-	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
-	if err != nil {
-		// ------------Check to see if we already own this bucket (which happens if you run this twice)
-		exists, errBucketExists := minioClient.BucketExists(ctx, bucketName)
-		if errBucketExists == nil && exists {
-			log.Printf("We already own %s\n", bucketName)
-		} else {
-			log.Println("Error to Create Bucket")
-			log.Fatalln(err)
-		}
-	} else {
-		log.Printf("Successfully created %s\n", bucketName)
-	}
-	log.Print("--------------------> MinIO Start succeed")
-	// ------------Initialize kafka producer
-	// err = producer.InitKafka()
+	// err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
 	// if err != nil {
-	// 	log.Fatal("Kafka producer ERROR: ", err)
+	// 	// ------------Check to see if we already own this bucket (which happens if you run this twice)
+	// 	exists, errBucketExists := minioClient.BucketExists(ctx, bucketName)
+	// 	if errBucketExists == nil && exists {
+	// 		log.Printf("We already own %s\n", bucketName)
+	// 	} else {
+	// 		log.Println("Error to Create Bucket")
+	// 		log.Fatalln(err)
+	// 	}
+	// } else {
+	// 	log.Printf("Successfully created %s\n", bucketName)
 	// }
+	log.Print("--------------------> MinIO Start succeed")
+
+	// ------------Initialize kafka producer
+	err = InitKafka()
+	if err != nil {
+		log.Fatal("Kafka producer ERROR: ", err)
+	}
+	log.Println("Kafka Init succeed")
 	// ------------
 
 	json_flex1 := []byte(`
@@ -283,7 +284,8 @@ func main() {
 		if err != nil {
 			log.Fatal("Event bot ERROR: ", err)
 		}
-		// topics := "user-messages"
+		// ------------kafka sent data method
+		topics := os.Getenv("KAFKA_TOPIC_NAME")
 		// for _, event := range events_bot {
 		// 	if event.Type == linebot.EventTypeMessage {
 		// 		switch message := event.Message.(type) {
@@ -307,6 +309,7 @@ func main() {
 		// 		}
 		// 	}
 		// }
+		// -------------
 		for _, event := range events_bot {
 			if event.Type == linebot.EventTypeMessage {
 				switch message := event.Message.(type) {
@@ -346,29 +349,6 @@ func main() {
 						log.Print("mood")
 						PushFlexMessage(json_flex1, bot, event.Source.UserID)
 					}
-					// ------------ PUT JSON TO MINIO
-					// currentTime := time.Now().UTC()
-					// date := fmt.Sprintf("%d-%02d-%02d", currentTime.Year(), currentTime.Month(), currentTime.Day())
-					// timestamp_string := strconv.Itoa(int(event.Timestamp.UnixNano()))
-					// uid_hash_string := strconv.FormatUint(uint64(hash(event.Source.UserID)), 10)
-					// log.Println("Add " + timestamp_string + "-" + uid_hash_string + ".json to MinIO Bucket ->> " + bucketName)
-
-					// objectName := fmt.Sprintf(folderName + "/" + responseType + "/" + date + "/" + timestamp_string + "-" + uid_hash_string + ".json")
-					// _, err = minioClient.PutObject(context.Background(), bucketName, objectName, bytes.NewReader(RawmessageJson), int64(len(RawmessageJson)), minio.PutObjectOptions{})
-					// if err != nil {
-					// 	log.Println("Error to PUT file")
-					// 	log.Println(err)
-					// }
-					// log.Println("JSON data put into MinIO successfully")
-					// ------------
-
-					// ------------ Kafka
-					// producerErr := producer.Produce(topics, string(messageJson))
-					// if producerErr != nil {
-					// 	log.Print(err)
-					// }
-					//messageResponse := fmt.Sprintf("Produced [%s] successfully", message.Text)
-					// ------------
 				}
 			}
 			if event.Type == linebot.EventTypePostback {
@@ -385,8 +365,9 @@ func main() {
 						Type:   string(event.Source.Type),
 						UserID: event.Source.UserID,
 					},
-					ReplyToken: event.ReplyToken,
-					Mode:       string(event.Mode),
+					ReplyToken:  event.ReplyToken,
+					Mode:        string(event.Mode),
+					Hash_userId: string(strconv.FormatUint(uint64(hash(event.Source.UserID)), 10)),
 				})
 
 				display_string := string(event.Postback.Data[len(event.Postback.Data)-1:])
@@ -394,21 +375,47 @@ func main() {
 				// if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(messageResponse)).Do(); err != nil {
 				// 	log.Print(err)
 				// }
-				messageResponse := fmt.Sprintf("ขอบคุณที่แชร์ความรู้สึกกับเรานะ💓\nคำตอบของคุณคือ " + display_string + "✨")
+				var display_mood_string string
+				var messageResponse string
+				if display_string == "1" {
+					display_mood_string = "แย่มาก"
+					messageResponse = fmt.Sprintf("ขอบคุณที่แชร์ความรู้สึกกับเรานะ💓\nคำตอบของคุณคือ " + display_mood_string + "\nมีอะไรบอกเราได้นะเป็นห่วงนะ 🥺")
+				} else if display_string == "2" {
+					display_mood_string = "แย่"
+					messageResponse = fmt.Sprintf("ขอบคุณที่แชร์ความรู้สึกกับเรานะ💓\nคำตอบของคุณคือ " + display_mood_string + "\nไม่เป็นไรนะสู้ ๆ 🤗")
+				} else if display_string == "3" {
+					display_mood_string = "ดี"
+					messageResponse = fmt.Sprintf("ขอบคุณที่แชร์ความรู้สึกกับเรานะ💓\nคำตอบของคุณคือ " + display_mood_string + "\nเยี่ยมไปเลย พรุ่งนี้ต้องดีกว่านี้แน่นอน ✌🏻")
+				} else if display_string == "4" {
+					display_mood_string = "ดีมาก"
+					messageResponse = fmt.Sprintf("ขอบคุณที่แชร์ความรู้สึกกับเรานะ💓\nคำตอบของคุณคือ " + display_mood_string + "\nขอให้ดีแบบนี้ต่อไปน้าา ✨")
+				}
+
 				replyMessage(messageResponse, bot, event.ReplyToken)
 
-				currentTime := time.Now().UTC()
-				date := fmt.Sprintf("%d-%02d-%02d", currentTime.Year(), currentTime.Month(), currentTime.Day())
-				timestamp_string := strconv.Itoa(int(event.Timestamp.UnixNano()))
-				uid_hash_string := strconv.FormatUint(uint64(hash(event.Source.UserID)), 10)
-				log.Println("Add " + timestamp_string + "-" + uid_hash_string + ".json to MinIO Bucket ->> " + bucketName)
-
-				objectName := fmt.Sprintf(folderName + "/" + responseType + "/" + date + "/" + timestamp_string + "-" + uid_hash_string + ".json")
-				_, err = minioClient.PutObject(context.Background(), bucketName, objectName, bytes.NewReader(PostbackLineMessage), int64(len(PostbackLineMessage)), minio.PutObjectOptions{})
-				if err != nil {
-					log.Println(err)
+				producerErr := Produce(topics, string(PostbackLineMessage))
+				if producerErr != nil {
+					log.Print(err)
+					panic("errorkafka")
+				} else {
+					messageResponse := fmt.Sprintf("Produced [%s] successfully", message.Postback.Data)
+					log.Print(messageResponse)
 				}
-				log.Println("JSON data put into MinIO successfully")
+
+				// -------------- Put data direct to Minio
+				// currentTime := time.Now().UTC()
+				// date := fmt.Sprintf("%d-%02d-%02d", currentTime.Year(), currentTime.Month(), currentTime.Day())
+				// timestamp_string := strconv.Itoa(int(event.Timestamp.UnixNano()))
+				// uid_hash_string := strconv.FormatUint(uint64(hash(event.Source.UserID)), 10)
+				// log.Println("Add " + timestamp_string + "-" + uid_hash_string + ".json to MinIO Bucket ->> " + bucketName)
+
+				// objectName := fmt.Sprintf(folderName + "/" + responseType + "/" + date + "/" + timestamp_string + "-" + uid_hash_string + ".json")
+				// _, err = minioClient.PutObject(context.Background(), bucketName, objectName, bytes.NewReader(PostbackLineMessage), int64(len(PostbackLineMessage)), minio.PutObjectOptions{})
+				// if err != nil {
+				// 	log.Println(err)
+				// }
+				// log.Println("JSON data put into MinIO successfully")
+				// ---------------------
 			}
 
 		}
@@ -521,7 +528,7 @@ func runCronJobs(jsonData []byte, botClient *linebot.Client) {
 	s := cron.New(cron.WithLocation(time.UTC))
 
 	// Broadcast At minute 30 past hour 8, 11, and 16 on every day-of-week from Monday through Friday.
-	s.AddFunc("30 1,4,10 * * 1-5", func() {
+	s.AddFunc("30 8 * * 1-5", func() {
 		BroadcastFlexMessage(jsonData, botClient)
 	})
 	// s.AddFunc("@hourly", func() {
@@ -538,4 +545,35 @@ func JSONMarshal(t interface{}) ([]byte, error) {
 	encoder.SetEscapeHTML(false)
 	err := encoder.Encode(t)
 	return buffer.Bytes(), err
+}
+
+var producer *kafka.Producer
+
+func InitKafka() error {
+	var err error
+	producer, err = kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": os.Getenv("BOOTSTRAP_SERVERS")})
+	return err
+}
+
+func Produce(topics string, message string) error {
+	deliveryChan := make(chan kafka.Event)
+	err := producer.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topics, Partition: kafka.PartitionAny},
+		Value:          []byte(message),
+	}, deliveryChan)
+	if err != nil {
+		fmt.Printf("Produce failed: %v\n", err)
+	}
+	e := <-deliveryChan
+	m := e.(*kafka.Message)
+
+	if m.TopicPartition.Error != nil {
+		fmt.Printf("Delivery failed: %v\n", m.TopicPartition.Error)
+	} else {
+		fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
+			*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+	}
+
+	close(deliveryChan)
+	return m.TopicPartition.Error
 }

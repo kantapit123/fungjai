@@ -4,3 +4,4 @@ sources:
 - name: clickhouse_dbt
   tables:
   - name: moody_table
+    

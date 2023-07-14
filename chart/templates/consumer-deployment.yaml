@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fungjai-consumer-deployment
+spec:
+  selector:
+    matchLabels:
+      app: fungjai-consumer
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: fungjai-consumer
+    spec:
+      containers:
+        - name: fungjai-consumer
+          image: {{ template "consumer.image" . }}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: {{ .Values.consumer.image.envFrom.secretRef.name }}
+            - configMapRef:
+                name: {{ .Values.consumer.image.envFrom.configMapRef.name }}
+      {{- if .Values.consumer.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.consumer.image.pullSecret.name }}
+      {{- end }}

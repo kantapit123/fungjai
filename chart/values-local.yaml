@@ -1,0 +1,156 @@
+webhook:
+  service:
+    port: 1323
+    targetPort: 1323
+
+  image:
+    pullSecret:
+      name: regcred
+    repository: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook
+    tag: "1.0.0"
+    envFrom:
+      secretRef:
+        name: webhook-secrets
+      configMapRef:
+        name: consumer-configmap
+
+  deploy:
+    containerPort: 1323
+  
+  configMap:
+    endpoint: "fungjai-minio.fungjai:9000"
+
+  ingress:
+    host: fungjai-dev.dbiteam.com
+
+consumer:
+  # service:
+  #   port: 1323
+  #   targetPort: 1323
+
+  image:
+    pullSecret:
+      name: regcred
+    repository: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/kafka-consumer
+    tag: "1.1.0"
+    envFrom:
+      secretRef:
+        name: webhook-secrets
+      configMapRef:
+        name: consumer-configmap
+
+  # deploy:
+  #   containerPort: 1323
+  
+  configMap:
+    endpoint: "fungjai-minio.fungjai:9000"
+
+metabase:
+  replicaCount: 1
+  service:
+    port: 3000
+    targetPort: 3000
+    # externalPort: 3030
+    # internalPort: 3000
+  image:
+    repository: 266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/metabase-clickhouse
+    tag: v1.0.0
+    pullSecret: 
+      name: regcred
+  deploy:
+    containerPort: 3000
+
+clickhouse:
+  enabled: true
+  shards: 1
+  replicaCount: 1
+
+  initdbScripts:
+    my_init_script.sh: |
+     #!/bin/bash
+     clickhouse client --user admin --password pass123 -q "CREATE TABLE IF NOT EXISTS mood_responses (type String,postback Tuple (data String),webhookEventId String,deliveryContext Tuple (isRedelivery UInt8),timestamp DateTime64(9),source Tuple (type String,userId String),replyToken String,mode String) ENGINE = MergeTree() ORDER BY timestamp;"
+
+  auth:
+    username: admin
+    password: pass123
+
+  service:
+    ports:
+      tcp: 9003
+      https: 443
+
+  zookeeper:
+    replicaCount: 1
+
+  persistence:
+    enabled: true
+    storageClass: efs-sc
+    accessMode: ReadWriteMany
+    size: 2Gi
+
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-cluster-lb-dev
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hostname: fungjai-clickhouse-dev.dbiteam.com
+
+
+minio:
+  enabled: true
+  resources:
+    requests:
+      memory: 2Gi
+  rootUser: rootuser
+  rootPassword: rootpass123
+  accessKey: mEOo8Tw0c1ZindTp
+  secretKey: M0jGwjgT5eSAYt4d8HfrhwLaSZP14Fst
+  mode: standalone
+  replicas: 1
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteMany
+    size: 2Gi
+  mountPath: /export
+  certsPath: /etc/minio/certs/
+  configPathmc: /etc/minio/mc/
+  users: null
+  securityContext:
+    enabled: true
+    runAsUser: 50008
+    runAsGroup: 50008
+    fsGroup: 50008
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-cluster-lb-dev
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hosts:
+      - fungjai-minio-dev.dbiteam.com
+  consoleIngress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: dbi-cluster-lb-dev
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+    path: /
+    hosts:
+      - fungjai-minio-console-dev.dbiteam.com
+
+kafka:
+  enabled: true
+  kraft:
+    enabled: true
+  zookeeper:
+    enabled: false
+  deleteTopicEnable: true
+
+  # fungjai-minio.fungjai
