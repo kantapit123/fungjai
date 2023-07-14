@@ -2,7 +2,7 @@ apiVersion: v2
 name: fungjai
 description: A Helm chart for Fungjai webhook
 type: application
-version: 1.0.0
+version: 1    
 appVersion: "1.0.0"
 dependencies: 
 - name: minio

@@ -1,32 +1,67 @@
 webhook:
   service:
+    name: webhook-service
     port: 1323
     targetPort: 1323
   image:
     pullSecret:
       name: regcred
     repository: 325067013020.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/webhook
-    tag: "1.0.0"
+    tag: "2.0.0"
     envFrom:
       secretRef:
         name: webhook-secrets
       configMapRef:
-        name: webhook-configmap
+        name: consumer-configmap
   deploy:
     containerPort: 1323
-  ingress:
-    host: fungjai.dbiteam.com
   configMap:
     endpoint: fungjai-minio.fungjai:9000
+  ingress:
+    host: fungjai.dbiteam.com
+
+consumer:
+  image:
+    pullSecret:
+      name: regcred
+    repository: 325067013020.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/consumer
+    tag: "1.1.0"
+    envFrom:
+      secretRef:
+        name: webhook-secrets
+      configMapRef:
+        name: consumer-configmap
+  configMap:
+    endpoint: "fungjai-minio.fungjai:9000"
     bucketname: fungjai
     location: ap-southeast-1
     foldername: responses
     type: mood
 
+metabase:
+  replicaCount: 1
+  service:
+    name: metabase-service
+    port: 3000
+    targetPort: 3000
+  image:
+    repository: 325067013020.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/metabase
+    tag: "1.0.1"
+    pullSecret: 
+      name: regcred
+  deploy:
+    containerPort: 3000
+  ingress:
+    host: metabase.dbiteam.com
+
 clickhouse:
   enabled: true
   shards: 1
   replicaCount: 1
+  initdbScripts:
+    my_init_script.sh: |
+     #!/bin/bash
+     clickhouse client --user admin --password pass123 -q "CREATE TABLE IF NOT EXISTS mood_responses (type String,postback Tuple (data String),webhookEventId String,deliveryContext Tuple (isRedelivery UInt8),timestamp DateTime64(9),source Tuple (type String,userId String),replyToken String,mode String) ENGINE = MergeTree() ORDER BY timestamp SETTINGS readonly = 0;"
   auth:
     username: admin
     password: pass123
@@ -36,9 +71,6 @@ clickhouse:
       https: 443
   zookeeper:
     replicaCount: 1
-    persistence:
-      accessModes:
-        - ReadWriteMany
   persistence:
     enabled: true
     storageClass: efs-sc
@@ -54,7 +86,6 @@ clickhouse:
       alb.ingress.kubernetes.io/target-type: ip
     path: /
     hostname: fungjai-clickhouse.dbiteam.com
-
 
 minio:
   enabled: true
@@ -102,22 +133,23 @@ minio:
     hosts:
       - fungjai-minio-console.dbiteam.com
 
+kafka:
+  enabled: true
+  kraft:
+    enabled: true
+  zookeeper:
+    enabled: false
+  deleteTopicEnable: true
+  persistence:
+    enabled: true
+    storageClass: efs-sc
+    accessModes: 
+    - ReadWriteMany
+    size: 8Gi
+    podSecurityContext:
+      fsGroup: 1001
+    # existingClaim: fungjai-kafka
 
-metabase:
-  replicaCount: 1
-  service:
-    name: metabase-service
-    port: 3000
-    targetPort: 3000
-  image:
-    repository: 325067013020.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/metabase
-    tag: "1.0.1"
-    pullSecret: 
-      name: regcred
-  deploy:
-    containerPort: 3000
-  ingress:
-    host: metabase.dbiteam.com
 
 efs:
   id: fs-f92098b9

@@ -3,7 +3,7 @@ version: 2
 sources:
 - name: clickhouse_dbt
   tables:
-  - name: mood
+  - name: mood_responses
 models:
   - name: source_mood
     columns:

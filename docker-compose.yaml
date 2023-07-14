@@ -198,7 +198,7 @@ services:
     ports:
       - "8123:8123"
     volumes:
-      - ./clickhouse_data:/var/lib/clickhouse
+      - ./click_data:/var/lib/clickhouse
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     depends_on:
       - airflow-webserver
@@ -212,7 +212,7 @@ services:
       - .env
       
   metabase:
-    image: '325067013020.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/metabase:1.0.1'
+    image: '266793978831.dkr.ecr.ap-southeast-1.amazonaws.com/fungjai/metabase-clickhouse:1.0.1'
     container_name: 'metabase-clickhouse'
     environment:
       MB_PLUGIN_CACHE_ENABLED: "false"

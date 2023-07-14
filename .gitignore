@@ -8,6 +8,7 @@ plugins
 .env
 dags/__pycache__/*
 clickhouse_data
+click_data
 
 .env
 

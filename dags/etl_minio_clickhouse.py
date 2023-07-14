@@ -88,16 +88,16 @@ with DAG(
         clickhouse_password = Variable.get("clickhouse_password")
 
         clickhouse_client = clickhouse_connect.get_client(
-            # interface=clickhouse_interface,
+            interface=clickhouse_interface,
             host=clickhouse_host,
             port=clickhouse_port,
             username=clickhouse_username,
-            # password=clickhouse_password,
+            password=clickhouse_password,
         )
 
         clickhouse_client.command(
             f"""INSERT INTO mood_responses SELECT * FROM s3(
-                'http://{minio_host_name}/{minio_bucket_name}/{minio_prefix}*/*.json',
+                '{clickhouse_interface}://{minio_host_name}/{minio_bucket_name}/{minio_prefix}*/*.json',
                 '{minio_access_key}',
                 '{minio_secret_key}',
                 'JSONEachRow'

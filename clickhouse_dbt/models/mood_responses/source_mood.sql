@@ -2,7 +2,7 @@
 
 with stg_mood as (
 SELECT *
-FROM default.mood
+FROM default.mood_responses
 )
 
 SELECT * from stg_mood

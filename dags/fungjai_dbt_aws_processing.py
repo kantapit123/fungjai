@@ -42,7 +42,7 @@ default_args = {
 with DAG(
     "fungjai_aws_dbt_processing",
     default_args=default_args,
-    schedule="10 0 * * *",
+    schedule="@daily",
     catchup=False,
     tags=["fungjai"],
     max_active_runs=1,
